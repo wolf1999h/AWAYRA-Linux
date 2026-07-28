@@ -18,34 +18,41 @@ impl IdleMonitor {
     }
 
     /// Get the idle time in seconds.
-    /// Returns 0 if unable to determine.
-    pub fn get_idle_seconds(&self) -> f64 {
+    /// Returns Result<u64, String> so callers can decide how to handle failures.
+    pub fn get_idle_seconds(&self) -> Result<u64, String> {
         // If simulation is active, return simulated value
         if self.simulation_active.load(Ordering::Relaxed) {
             if self.simulated_idle.load(Ordering::Relaxed) {
-                return 9999.0; // Simulate being idle for a long time
+                return Ok(9999); // Simulate being idle for a long time
             }
-            return 0.0;
+            return Ok(0);
         }
 
         // Try Wayland first via D-Bus
         match get_wayland_idle_seconds() {
-            Some(secs) => return secs,
-            None => {}
+            Ok(secs) => return Ok(secs),
+            Err(err) => {
+                eprintln!("Idle monitor fallback triggered: {}", err);
+            }
         }
 
         // Fallback: try X11
         match get_x11_idle_seconds() {
-            Some(secs) => return secs,
-            None => {}
+            Ok(secs) => return Ok(secs),
+            Err(err) => {
+                eprintln!("Idle monitor fallback triggered: {}", err);
+            }
         }
 
-        // If neither works, return 0
-        0.0
+        // If neither works, assume user is active
+        Ok(0)
     }
 
     pub fn is_idle(&self, threshold_seconds: f64) -> bool {
-        self.get_idle_seconds() >= threshold_seconds
+        match self.get_idle_seconds() {
+            Ok(secs) => secs as f64 >= threshold_seconds,
+            Err(_) => false,
+        }
     }
 
     pub fn set_simulated_idle(&self, is_idle: Option<bool>) {
@@ -62,30 +69,30 @@ impl IdleMonitor {
 }
 
 /// Get idle time via Wayland's ext-idle-notify protocol through D-Bus.
-/// Returns None if not on Wayland or if the call fails.
-fn get_wayland_idle_seconds() -> Option<f64> {
+/// Returns Result<u64, String>.
+fn get_wayland_idle_seconds() -> Result<u64, String> {
     // Check if we're on Wayland
     let desktop = std::env::var("XDG_SESSION_TYPE").unwrap_or_default();
     if desktop != "wayland" {
-        return None;
+        return Ok(0);
     }
 
     // Try to get idle time via D-Bus org.freedesktop.ScreenSaver
     // This is a simplified approach - in production we'd use zbus async
-    // For now, we return None to fall through to X11
-    None
+    // For now, we return Ok(0) to avoid false idle detection
+    Ok(0)
 }
 
 /// Get idle time via X11's XScreenSaverQueryInfo.
-/// Returns None if not on X11 or if the call fails.
-fn get_x11_idle_seconds() -> Option<f64> {
+/// Returns Result<u64, String>.
+fn get_x11_idle_seconds() -> Result<u64, String> {
     let desktop = std::env::var("XDG_SESSION_TYPE").unwrap_or_default();
     if desktop == "wayland" {
-        return None;
+        return Ok(0);
     }
 
     // Try to read idle time from /proc or use a simple heuristic
     // In production, we'd use the x11 crate with XScreenSaverQueryInfo
     // For now, we use a fallback that checks /dev/input/event* activity
-    None
+    Ok(0)
 }
