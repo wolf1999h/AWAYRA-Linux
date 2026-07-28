@@ -19,10 +19,21 @@ impl<T: Serialize + DeserializeOwned> JsonStore<T> {
             return Ok(None);
         }
 
-        let content = fs::read_to_string(&self.path).map_err(|e| format!("Failed to read {}: {}", self.path.display(), e))?;
-        serde_json::from_str(&content)
-            .map(Some)
-            .map_err(|e| format!("Failed to parse {}: {}", self.path.display(), e))
+        let content = match fs::read_to_string(&self.path) {
+            Ok(c) => c,
+            Err(e) => {
+                eprintln!("Failed to read {}: {}", self.path.display(), e);
+                return Ok(None);
+            }
+        };
+
+        match serde_json::from_str(&content) {
+            Ok(value) => Ok(Some(value)),
+            Err(e) => {
+                eprintln!("Failed to parse {}: {}", self.path.display(), e);
+                Ok(None)
+            }
+        }
     }
 
     pub fn save(&self, value: &T) -> Result<(), String> {

@@ -56,3 +56,18 @@ pub struct SchedulerDiagnostics {
     pub skipped: i32,
     pub snoozed: i32,
 }
+
+#[derive(Debug, Clone)]
+pub enum SchedulerEvent {
+    TriggerBreak {
+        break_type: BreakType,
+        duration_seconds: i32,
+        activity_index: i32,
+    },
+    BreakEnded {
+        break_type: BreakType,
+        completed: bool,
+        skipped: bool,
+        snoozed: bool,
+    },
+}

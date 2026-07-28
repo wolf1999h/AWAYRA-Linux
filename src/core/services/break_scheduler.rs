@@ -1,6 +1,8 @@
 use chrono::{DateTime, Duration, Utc};
+use std::sync::mpsc::Sender;
 
 use crate::core::models::*;
+use crate::core::models::SchedulerEvent;
 use crate::core::services::work_hours_evaluator::WorkHoursEvaluator;
 use crate::core::services::settings_validator::SettingsValidator;
 use crate::core::services::settings_schedule_changes::SettingsScheduleChanges;
@@ -26,6 +28,7 @@ pub struct BreakScheduler {
     idle_frozen_move_remaining: Option<Duration>,
     move_activity_index: i32,
     snooze_in_progress: bool,
+    event_tx: Sender<SchedulerEvent>,
 }
 
 pub trait Clock: Send + Sync {
@@ -45,6 +48,7 @@ impl BreakScheduler {
         clock: Box<dyn Clock>,
         settings: AppSettings,
         persisted_state: Option<SchedulerState>,
+        event_tx: Sender<SchedulerEvent>,
     ) -> Self {
         let mut state = persisted_state.unwrap_or_else(|| SchedulerState::create_default(clock.now()));
         state.last_clock_check = clock.now();
@@ -67,6 +71,7 @@ impl BreakScheduler {
             idle_frozen_move_remaining: None,
             move_activity_index: 0,
             snooze_in_progress: false,
+            event_tx,
         };
         s.normalize_state_on_load();
         s
@@ -618,6 +623,12 @@ impl BreakScheduler {
         if break_type == BreakType::Move {
             self.move_activity_index = (self.move_activity_index + 1) % MOVE_ACTIVITY_COUNT;
         }
+
+        let _ = self.event_tx.send(SchedulerEvent::TriggerBreak {
+            break_type,
+            duration_seconds,
+            activity_index: self.move_activity_index,
+        });
     }
 
     fn end_break(&mut self, break_type: BreakType, completed: bool, skipped: bool, _snoozed: bool) {
@@ -629,6 +640,13 @@ impl BreakScheduler {
             self.schedule_next_from_completion(break_type, now);
         }
         // If snoozed, per-break snooze due times were set by the caller.
+
+        let _ = self.event_tx.send(SchedulerEvent::BreakEnded {
+            break_type,
+            completed,
+            skipped,
+            snoozed: _snoozed,
+        });
     }
 
     fn schedule_next_from_completion(&mut self, break_type: BreakType, from: DateTime<Utc>) {

@@ -26,26 +26,30 @@ pub struct AppHost {
     data_dir: PathBuf,
     tick_handle: Option<tokio::task::JoinHandle<()>>,
     idle_handle: Option<tokio::task::JoinHandle<()>>,
+    event_tx: std::sync::mpsc::Sender<crate::core::models::SchedulerEvent>,
 }
 
 impl AppHost {
-    pub fn new() -> Self {
+    pub fn new(event_tx: Option<std::sync::mpsc::Sender<crate::core::models::SchedulerEvent>>) -> Self {
         let data_dir = Self::get_data_dir();
 
         let settings_store: JsonStore<AppSettings> = JsonStore::<AppSettings>::new(data_dir.join("settings.json"));
         let state_store: JsonStore<SchedulerState> = JsonStore::<SchedulerState>::new(data_dir.join("state.json"));
         let statistics_store: JsonStore<StatisticsData> = JsonStore::<StatisticsData>::new(data_dir.join("statistics.json"));
 
-        let localization = Arc::new(LocalizationService::new());
-        let idle_monitor = Arc::new(IdleMonitor::new());
-        let screenshot_service = Arc::new(ScreenshotService::new());
-
-        // Load settings
+        // Load settings with fallback to default
         let settings = settings_store.load()
             .ok()
             .flatten()
             .filter(|s| SettingsValidator::is_valid(s))
-            .unwrap_or_default();
+            .unwrap_or_else(|| {
+                let default = AppSettings::default();
+                let _ = settings_store.save(&default);
+                default
+            });
+
+        // Attempt to save defaults back to disk if file was missing/corrupted
+        let _ = settings_store.save(&settings);
 
         // Load state
         let state = state_store.load()
@@ -59,11 +63,17 @@ impl AppHost {
             .flatten()
             .unwrap_or_else(StatisticsData::create_default);
 
+        let event_tx = event_tx.unwrap_or_else(|| {
+            let (tx, _) = std::sync::mpsc::channel();
+            tx
+        });
+
         let scheduler = Arc::new(Mutex::new(
             BreakScheduler::new(
                 Box::new(SystemClock),
                 settings.clone(),
                 Some(state),
+                event_tx.clone(),
             )
         ));
 
@@ -84,6 +94,7 @@ impl AppHost {
             data_dir,
             tick_handle: None,
             idle_handle: None,
+            event_tx,
         }
     }
 

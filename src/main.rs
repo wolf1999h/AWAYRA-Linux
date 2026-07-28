@@ -12,7 +12,9 @@ fn main() {
 
     let app = Application::new(Some("com.awayra.Awayra"), Default::default());
 
-    let host = Arc::new(Mutex::new(ui::services::app_host::AppHost::new()));
+    let (event_tx, event_rx) = std::sync::mpsc::channel::<crate::core::models::SchedulerEvent>();
+
+    let host = Arc::new(Mutex::new(ui::services::app_host::AppHost::new(Some(event_tx.clone()))));
 
     // Initialize host
     {
@@ -21,8 +23,34 @@ fn main() {
         rt.block_on(host_ref.initialize());
     }
 
+    // Spawn background event listener
+    {
+        let host_ev = host.clone();
+        std::thread::spawn(move || {
+            while let Ok(event) = event_rx.recv() {
+                match event {
+                    crate::core::models::SchedulerEvent::TriggerBreak { break_type, duration_seconds, activity_index } => {
+                        if let Ok(host_lock) = host_ev.lock() {
+                            if let Ok(mut ov) = host_lock.scheduler.lock() {
+                                // Scheduler already updated state; this is a signal only.
+                            }
+                        }
+                    }
+                    crate::core::models::SchedulerEvent::BreakEnded { break_type, completed, skipped, snoozed } => {
+                        if let Ok(host_lock) = host_ev.lock() {
+                            if let Ok(mut ov) = host_lock.scheduler.lock() {
+                                // Scheduler already updated state; this is a signal only.
+                            }
+                        }
+                    }
+                }
+            }
+        });
+    }
+
     app.connect_activate(move |app| {
         let host_clone = host.clone();
+        let _overlay_event_tx = event_tx.clone();
 
         // Create dashboard
         let dashboard = ui::views::dashboard::DashboardWindow::new(app, host_clone.clone());
