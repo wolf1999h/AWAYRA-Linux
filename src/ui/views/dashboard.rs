@@ -7,7 +7,7 @@ use crate::core::models::BreakType;
 use crate::ui::services::app_host::AppHost;
 
 pub struct DashboardWindow {
-    window: ApplicationWindow,
+    pub window: ApplicationWindow,
     host: Arc<Mutex<AppHost>>,
     status_label: Label,
     eye_countdown: Label,
@@ -129,6 +129,12 @@ impl DashboardWindow {
         main_box.append(&secondary_grid);
 
         window.set_child(Some(&main_box));
+
+        // Prevent window from actually closing; hide to tray instead
+        window.connect_close_request(|_window| {
+            _window.hide();
+            gtk4::glib::Propagation::Stop
+        });
 
         // Signals
         let h = host.clone();

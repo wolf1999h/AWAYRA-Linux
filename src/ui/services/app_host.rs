@@ -81,6 +81,10 @@ impl AppHost {
             StatisticsService::new(stats_data)
         ));
 
+        let localization = std::sync::Arc::new(LocalizationService::new());
+        let idle_monitor = std::sync::Arc::new(IdleMonitor::new());
+        let screenshot_service = std::sync::Arc::new(ScreenshotService::new());
+
         Self {
             scheduler,
             statistics,
