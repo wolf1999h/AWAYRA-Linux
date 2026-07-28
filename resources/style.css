@@ -1,0 +1,222 @@
+/* Awayra GTK4 Styles */
+
+/* Root window */
+window {
+    background-color: #F4F7FB;
+    color: #111827;
+    font-family: "Segoe UI Variable", "Segoe UI", "Ubuntu", "Cantarell", sans-serif;
+}
+
+/* Dashboard */
+.dashboard-title {
+    font-size: 24px;
+    font-weight: 700;
+    color: #111827;
+    margin-bottom: 4px;
+}
+
+.dashboard-status {
+    font-size: 14px;
+    color: #6B7280;
+    margin-bottom: 16px;
+}
+
+/* Countdown cards - dark background with light text */
+.countdown-card {
+    background-color: #1A1E24;
+    border: 1px solid #46505E;
+    border-radius: 14px;
+    padding: 0;
+    min-height: 100px;
+}
+
+.countdown-card label {
+    color: #F4F7FB;
+}
+
+.card-label {
+    font-size: 12px;
+    font-weight: 600;
+    color: #C7D0E0;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.countdown-value {
+    font-size: 28px;
+    font-weight: 700;
+    color: #F4F7FB;
+    font-variant-numeric: tabular-nums;
+}
+
+.muted-text {
+    font-size: 11px;
+    color: #98A4B8;
+}
+
+/* Statistics tiles - dark background with light text */
+.stat-tile {
+    background-color: #1A1E24;
+    border: 1px solid #46505E;
+    border-radius: 10px;
+    padding: 12px;
+    font-size: 13px;
+    font-weight: 600;
+    color: #F4F7FB;
+    min-height: 40px;
+}
+
+/* Buttons */
+.primary-button {
+    background-color: #4DBCF3;
+    color: #07131C;
+    border: none;
+    border-radius: 10px;
+    padding: 10px 16px;
+    font-weight: 600;
+    font-size: 14px;
+    min-height: 40px;
+}
+
+.primary-button:hover {
+    background-color: #67C8F7;
+}
+
+.primary-button:active {
+    background-color: #32A9E3;
+}
+
+.secondary-button {
+    background-color: #20252D;
+    color: #F4F7FB;
+    border: 1px solid #46505E;
+    border-radius: 10px;
+    padding: 10px 16px;
+    font-weight: 600;
+    font-size: 14px;
+    min-height: 40px;
+}
+
+.secondary-button:hover {
+    background-color: #46505E;
+    border-color: #67C8F7;
+}
+
+/* Overlay */
+.overlay-bg {
+    background-color: #0E1116;
+}
+
+.overlay-title {
+    font-size: 28px;
+    font-weight: 700;
+    color: #F4F7FB;
+}
+
+.overlay-countdown {
+    font-size: 72px;
+    font-weight: 700;
+    color: #F4F7FB;
+    font-variant-numeric: tabular-nums;
+}
+
+.overlay-instruction {
+    font-size: 18px;
+    color: #C7D0E0;
+}
+
+.overlay-instruction-secondary {
+    font-size: 14px;
+    color: #98A4B8;
+}
+
+.overlay-btn {
+    background-color: #20252D;
+    color: #F4F7FB;
+    border: 1px solid #46505E;
+    border-radius: 10px;
+    padding: 10px 20px;
+    font-weight: 600;
+    min-width: 100px;
+}
+
+.overlay-btn-primary {
+    background-color: #4DBCF3;
+    color: #07131C;
+    border: none;
+    border-radius: 10px;
+    padding: 10px 20px;
+    font-weight: 600;
+    min-width: 100px;
+}
+
+/* Settings */
+.settings-title {
+    font-size: 22px;
+    font-weight: 700;
+    color: #111827;
+}
+
+.settings-subtitle {
+    font-size: 13px;
+    color: #6B7280;
+}
+
+.settings-section {
+    background-color: #1A1E24;
+    border: 1px solid #46505E;
+    border-radius: 14px;
+    padding: 16px;
+}
+
+/* All text inside settings sections must be light */
+.settings-section label {
+    color: #F4F7FB;
+}
+
+.settings-section .section-title {
+    color: #4DBCF3;
+}
+
+.settings-section .muted-text {
+    color: #98A4B8;
+}
+
+.section-title {
+    font-size: 16px;
+    font-weight: 600;
+    color: #4DBCF3;
+    margin-bottom: 8px;
+}
+
+.validation-label {
+    font-size: 12px;
+    color: #FF6B6B;
+    min-height: 20px;
+}
+
+/* Switch and spinbutton styling */
+switch {
+    font-size: 13px;
+}
+
+switch label {
+    color: #F4F7FB;
+}
+
+spinbutton {
+    background-color: white;
+    color: #111827;
+    border: 1px solid #46505E;
+    border-radius: 6px;
+    padding: 4px 8px;
+    min-width: 80px;
+}
+
+entry {
+    background-color: white;
+    color: #111827;
+    border: 1px solid #46505E;
+    border-radius: 6px;
+    padding: 4px 8px;
+}
