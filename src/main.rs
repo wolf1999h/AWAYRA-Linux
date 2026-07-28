@@ -4,56 +4,52 @@ mod core;
 mod ui;
 
 use gtk4::prelude::*;
-use gtk4::Application;
-use std::sync::{Arc, Mutex};
+use gtk4::glib;
 
-fn main() {
+fn main() -> glib::ExitCode {
+    // 1. Initialize logger
     env_logger::init();
 
-    let app = Application::new(Some("com.awayra.Awayra"), Default::default());
-
-    let (event_tx, event_rx) = std::sync::mpsc::channel::<crate::core::models::SchedulerEvent>();
-
-    let audio_service = Arc::new(crate::core::services::audio_service::AudioService::new());
-
-    let host = Arc::new(Mutex::new(ui::services::app_host::AppHost::new(Some(event_tx.clone()))));
-
-    // Initialize host
-    {
-        let rt = tokio::runtime::Runtime::new().expect("Tokio runtime");
-        let mut host_ref = host.lock().unwrap();
-        rt.block_on(host_ref.initialize());
+    // 2. EXPLICITLY initialize GTK4 before touching any library, channel, or service!
+    if let Err(err) = gtk4::init() {
+        eprintln!("CRITICAL: Failed to initialize GTK4: {}. Please check if your X11/Wayland DISPLAY environment variable is set and graphical desktop is accessible.", err);
+        std::process::exit(1);
     }
 
-    // Share overlay globally so the GTK main loop can show/hide it
-    let overlay = Arc::new(Mutex::new(None::<ui::views::overlay::OverlayWindow>));
+    // 3. Create channels and services ONLY AFTER gtk4::init() succeeds
+    let (event_tx, event_rx) = std::sync::mpsc::channel::<crate::core::models::SchedulerEvent>();
 
-    // Wrap event_rx in Arc<Mutex<...>> to satisfy Fn closure requirements
-    let event_rx = Arc::new(Mutex::new(event_rx));
-    let event_rx_clone = event_rx.clone();
+    let host = std::sync::Arc::new(std::sync::Mutex::new(ui::services::app_host::AppHost::new(Some(event_tx.clone()))));
 
+    // Initialize async host runtime
+    {
+        let host_ref = host.clone();
+        let rt = tokio::runtime::Runtime::new().expect("Failed to create Tokio runtime");
+        rt.block_on(async move {
+            let mut h = host_ref.lock().unwrap();
+            h.initialize().await;
+        });
+    }
+
+    let overlay = std::sync::Arc::new(std::sync::Mutex::new(None::<ui::views::overlay::OverlayWindow>));
+    let event_rx = std::sync::Arc::new(std::sync::Mutex::new(event_rx));
+    let app = gtk4::Application::new(Some("com.awayra.Awayra"), Default::default());
+
+    // 4. Connect Activate (UI instantiation strictly inside here)
     app.connect_activate(move |app| {
         let host_clone = host.clone();
-        let overlay_clone = overlay.clone();
 
         // Create dashboard
         let dashboard = ui::views::dashboard::DashboardWindow::new(app, host_clone.clone());
         dashboard.show();
 
-        let dashboard_window = dashboard.window.clone();
-
-        // Create tray service
-        let _ = ui::services::tray_service::TrayService::run(
-            gtk4::glib::clone::Downgrade::downgrade(&dashboard_window),
-            gtk4::glib::clone::Downgrade::downgrade(&app),
-        );
-
         // Create overlay
-        let overlay_window = ui::views::overlay::OverlayWindow::new(host_clone.clone());
-        *overlay_clone.lock().unwrap() = Some(overlay_window);
+        let overlay_win = ui::views::overlay::OverlayWindow::new(host_clone.clone());
+        *overlay.lock().unwrap() = Some(overlay_win);
 
-        let rx_timer = event_rx_clone.clone();
-        let overlay_timer = overlay_clone.clone();
+        // Register UI polling timers
+        let rx_timer = event_rx.clone();
+        let overlay_timer = overlay.clone();
         let _ = gtk4::glib::timeout_add_local(std::time::Duration::from_millis(200), move || {
             if let Ok(rx_lock) = rx_timer.lock() {
                 while let Ok(event) = rx_lock.try_recv() {
@@ -61,11 +57,7 @@ fn main() {
                         crate::core::models::SchedulerEvent::TriggerBreak { break_type, duration_seconds, activity_index } => {
                             if let Ok(mut ov_lock) = overlay_timer.lock() {
                                 if let Some(overlay_window) = ov_lock.as_mut() {
-                                    let args = crate::core::models::BreakStartedEventArgs {
-                                        break_type,
-                                        duration_seconds,
-                                        activity_index,
-                                    };
+                                    let args = crate::core::models::BreakStartedEventArgs { break_type, duration_seconds, activity_index };
                                     overlay_window.show_break(args);
                                 }
                             }
@@ -83,9 +75,9 @@ fn main() {
             gtk4::glib::ControlFlow::Continue
         });
 
-        // Listen for break events
-        let overlay_clone2 = overlay_clone.clone();
+        let overlay_clone2 = overlay.clone();
         gtk4::glib::timeout_add_seconds_local(1, move || {
+            // Scheduler snapshot polling logic
             if let Ok(host_lock) = host_clone.lock() {
                 if let Ok(sched) = host_lock.scheduler.lock() {
                     let snapshot = sched.get_snapshot();
@@ -119,5 +111,6 @@ fn main() {
         });
     });
 
-    app.run();
+    // 5. Run application
+    app.run()
 }
