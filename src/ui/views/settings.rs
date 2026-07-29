@@ -4,13 +4,14 @@ use std::sync::{Arc, Mutex};
 
 use crate::core::models::AppSettings;
 use crate::core::services::break_scheduler::BreakScheduler;
+use crate::ui::services::app_host::AppHost;
 
 pub struct SettingsWindow {
     window: Window,
 }
 
 impl SettingsWindow {
-    pub fn new(settings_arc: Arc<Mutex<AppSettings>>, scheduler: Arc<Mutex<BreakScheduler>>) -> Self {
+    pub fn new(host: Arc<Mutex<AppHost>>) -> Self {
         let window = Window::new();
         window.set_title(Some("Awayra Settings"));
         window.set_default_size(720, 600);
@@ -40,7 +41,7 @@ impl SettingsWindow {
         content.set_margin_top(8);
         content.set_margin_bottom(8);
 
-        let settings = settings_arc.lock().unwrap().clone();
+        let settings = host.lock().unwrap().settings.lock().unwrap().clone();
 
         // Eye Reset section
         let eye_section = Self::create_section("Eye Reset");
@@ -126,9 +127,8 @@ impl SettingsWindow {
         vbox.append(&action_bar);
         window.set_child(Some(&vbox));
 
-        // Save signal - update BOTH settings and scheduler
-        let settings_arc_clone = settings_arc.clone();
-        let scheduler_clone = scheduler.clone();
+        // Save signal - persist to disk and update scheduler
+        let host_for_save = host.clone();
         save_btn.connect_clicked(move |_| {
             let new_settings = AppSettings {
                 schema_version: crate::core::models::CURRENT_SCHEMA_VERSION,
@@ -157,14 +157,12 @@ impl SettingsWindow {
                 capture_screenshot: capture_switch.is_active(),
             };
 
-            // Update settings storage
-            if let Ok(mut settings) = settings_arc_clone.lock() {
-                *settings = new_settings.clone();
-            }
-
-            // Update scheduler with new settings
-            if let Ok(mut sched) = scheduler_clone.lock() {
-                sched.update_settings(new_settings);
+            // Use host's save_configuration which handles persistence and scheduler update
+            if let Ok(host_ref) = host_for_save.lock() {
+                let rt = tokio::runtime::Runtime::new().expect("Failed to create Tokio runtime");
+                rt.block_on(async move {
+                    let _ = host_ref.save_configuration(new_settings).await;
+                });
             }
         });
 

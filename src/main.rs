@@ -31,6 +31,15 @@ fn main() -> glib::ExitCode {
         });
     }
 
+    // Spawn system tray using ksni (D-Bus, GTK3-free)
+    let host_for_tray = host.clone();
+    std::thread::spawn(move || {
+        let _tray = ksni::Tray::new(ui::services::tray_service::TrayService::new());
+        let host_arc = host_for_tray;
+        // Keep tray alive in this thread; on quit, drop will clean up
+        std::thread::park();
+    });
+
     let overlay = std::sync::Arc::new(std::sync::Mutex::new(None::<ui::views::overlay::OverlayWindow>));
     let event_rx = std::sync::Arc::new(std::sync::Mutex::new(event_rx));
     let app = gtk4::Application::new(Some("com.awayra.Awayra"), Default::default());

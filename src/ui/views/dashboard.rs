@@ -182,8 +182,7 @@ impl DashboardWindow {
         settings_btn.connect_clicked(move |_| {
             if let Ok(host_ref) = h4.lock() {
                 let settings_win = crate::ui::views::settings::SettingsWindow::new(
-                    host_ref.settings.clone(),
-                    host_ref.scheduler.clone(),
+                    host_ref.clone(),
                 );
                 settings_win.show();
             }
