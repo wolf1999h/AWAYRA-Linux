@@ -45,11 +45,13 @@ impl DashboardWindow {
         // Title
         let title = Label::new(Some("Awayra"));
         title.add_css_class("dashboard-title");
+        title.add_css_class("title-label");
         main_box.append(&title);
 
         // Status
         let status_label = Label::new(Some("Starting..."));
         status_label.add_css_class("dashboard-status");
+        status_label.add_css_class("subtitle-label");
         main_box.append(&status_label);
 
         // Countdown cards
@@ -58,9 +60,11 @@ impl DashboardWindow {
         cards_grid.set_column_spacing(6);
 
         let (eye_countdown, eye_state, eye_frame) = Self::make_card("Eye Reset");
+        eye_frame.add_css_class("card");
         cards_grid.attach(&eye_frame, 0, 0, 1, 1);
 
         let (move_countdown, move_state, move_frame) = Self::make_card("Move Break");
+        move_frame.add_css_class("card");
         cards_grid.attach(&move_frame, 1, 0, 1, 1);
 
         main_box.append(&cards_grid);
@@ -105,10 +109,12 @@ impl DashboardWindow {
 
         let eye_btn = Button::with_label("Eye Reset Now");
         eye_btn.add_css_class("primary-button");
+        eye_btn.add_css_class("primary-btn");
         action_grid.attach(&eye_btn, 0, 0, 1, 1);
 
         let move_btn = Button::with_label("Move Break Now");
         move_btn.add_css_class("primary-button");
+        move_btn.add_css_class("primary-btn");
         action_grid.attach(&move_btn, 1, 0, 1, 1);
 
         main_box.append(&action_grid);
@@ -250,6 +256,7 @@ impl DashboardWindow {
     fn make_card(title: &str) -> (Label, Label, gtk4::Frame) {
         let frame = gtk4::Frame::new(None);
         frame.add_css_class("countdown-card");
+        frame.add_css_class("card");
         let vbox = gtk4::Box::new(Orientation::Vertical, 4);
         vbox.set_margin_top(12);
         vbox.set_margin_bottom(12);
@@ -257,12 +264,15 @@ impl DashboardWindow {
         vbox.set_margin_end(12);
         let title_lbl = Label::new(Some(title));
         title_lbl.add_css_class("card-label");
+        title_lbl.add_css_class("title-label");
         vbox.append(&title_lbl);
         let countdown = Label::new(Some("--:--"));
         countdown.add_css_class("countdown-value");
+        countdown.add_css_class("timer-display");
         vbox.append(&countdown);
         let state = Label::new(Some(""));
         state.add_css_class("muted-text");
+        state.add_css_class("subtitle-label");
         vbox.append(&state);
         frame.set_child(Some(&vbox));
         (countdown, state, frame)

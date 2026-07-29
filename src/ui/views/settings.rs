@@ -24,10 +24,12 @@ impl SettingsWindow {
 
         let title = Label::new(Some("Settings"));
         title.add_css_class("settings-title");
+        title.add_css_class("title-label");
         vbox.append(&title);
 
         let subtitle = Label::new(Some("Configure reminder intervals, behavior, appearance, and system integration."));
         subtitle.add_css_class("settings-subtitle");
+        subtitle.add_css_class("subtitle-label");
         vbox.append(&subtitle);
 
         let scroll = ScrolledWindow::new();
@@ -113,9 +115,11 @@ impl SettingsWindow {
 
         let save_btn = Button::with_label("Save");
         save_btn.add_css_class("primary-button");
+        save_btn.add_css_class("primary-btn");
         action_bar.append(&save_btn);
 
         let close_btn = Button::with_label("Close");
+        close_btn.add_css_class("secondary-button");
         close_btn.add_css_class("secondary-button");
         action_bar.append(&close_btn);
 

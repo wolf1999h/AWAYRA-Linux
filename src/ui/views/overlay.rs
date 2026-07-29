@@ -29,12 +29,15 @@ impl OverlayWindow {
         vbox.set_halign(Align::Center);
         vbox.set_valign(Align::Center);
         vbox.add_css_class("overlay-bg");
+        vbox.add_css_class("glass-overlay");
 
         let title_label = Label::new(Some("Break Time"));
         title_label.add_css_class("overlay-title");
+        title_label.add_css_class("title-label");
 
         let countdown_label = Label::new(Some("0"));
         countdown_label.add_css_class("overlay-countdown");
+        countdown_label.add_css_class("timer-display");
 
         let instruction_label = Label::new(Some(""));
         instruction_label.add_css_class("overlay-instruction");
@@ -45,12 +48,15 @@ impl OverlayWindow {
 
         let skip_btn = Button::with_label("Skip");
         skip_btn.add_css_class("overlay-btn");
+        skip_btn.add_css_class("secondary-button");
 
         let snooze_btn = Button::with_label("Snooze");
         snooze_btn.add_css_class("overlay-btn");
+        snooze_btn.add_css_class("secondary-button");
 
         let complete_btn = Button::with_label("Complete");
         complete_btn.add_css_class("overlay-btn-primary");
+        complete_btn.add_css_class("primary-btn");
 
         btn_box.append(&skip_btn);
         btn_box.append(&snooze_btn);

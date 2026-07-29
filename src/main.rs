@@ -39,6 +39,23 @@ fn main() -> glib::ExitCode {
     app.connect_activate(move |app| {
         let host_clone = host.clone();
 
+        // Enable system-wide dark theme
+        if let Some(gtk_settings) = gtk4::Settings::default() {
+            gtk_settings.set_gtk_application_prefer_dark_theme(true);
+        }
+
+        // Load custom CSS from resources/style.css
+        let provider = gtk4::CssProvider::new();
+        if provider.load_from_path("resources/style.css").is_ok() {
+            if let Some(display) = gdk4::Display::default() {
+                gtk4::style_context_add_provider_for_display(
+                    &display,
+                    &provider,
+                    gtk4::STYLE_PROVIDER_PRIORITY_APPLICATION,
+                );
+            }
+        }
+
         // Create dashboard
         let dashboard = ui::views::dashboard::DashboardWindow::new(app, host_clone.clone());
         dashboard.show();

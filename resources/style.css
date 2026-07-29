@@ -1,43 +1,141 @@
-/* Awayra GTK4 Styles */
+/* Awayra Modern Dark Palette - Catppuccin Mocha inspired */
 
-/* Root window */
+/* Global */
 window {
-    background-color: #F4F7FB;
-    color: #111827;
-    font-family: "Segoe UI Variable", "Segoe UI", "Ubuntu", "Cantarell", sans-serif;
+    background-color: #181825;
+    color: #cdd6f4;
+    font-family: 'Inter', 'Ubuntu', 'Cantarell', sans-serif;
 }
 
-/* Dashboard */
+headerbar {
+    background-color: #181825;
+    color: #cdd6f4;
+    border-bottom: 1px solid #313244;
+}
+
+/* Cards & Containers */
+.card {
+    background-color: #1e1e2e;
+    border: 1px solid #313244;
+    border-radius: 12px;
+    padding: 16px;
+    margin: 8px;
+}
+
+.card:hover {
+    border-color: #89b4fa;
+}
+
+/* Typography */
+.title-label {
+    font-size: 20px;
+    font-weight: bold;
+    color: #cdd6f4;
+}
+
+.subtitle-label {
+    font-size: 13px;
+    color: #a6adc8;
+}
+
+.timer-display {
+    font-size: 48px;
+    font-weight: 800;
+    color: #89b4fa;
+    font-features: "tnum";
+}
+
+/* Buttons */
+button {
+    background-color: #313244;
+    color: #cdd6f4;
+    border: 1px solid #313244;
+    border-radius: 8px;
+    padding: 8px 16px;
+    font-weight: 600;
+    transition: all 150ms ease-in-out;
+}
+
+button:hover {
+    background-color: #45475a;
+    border-color: #89b4fa;
+}
+
+button.primary-btn {
+    background-color: #89b4fa;
+    color: #11111b;
+    border: none;
+}
+
+button.primary-btn:hover {
+    background-color: #b4befe;
+}
+
+button.danger-btn {
+    background-color: #f38ba8;
+    color: #11111b;
+    border: none;
+}
+
+/* Progress Bars & Sliders */
+progressbar trough {
+    background-color: #313244;
+    border-radius: 6px;
+    min-height: 8px;
+}
+
+progressbar progress {
+    background-color: #89b4fa;
+    border-radius: 6px;
+}
+
+scale trough {
+    background-color: #313244;
+    border-radius: 4px;
+}
+
+scale highlight {
+    background-color: #89b4fa;
+    border-radius: 4px;
+}
+
+/* Overlay Glass Effect */
+.glass-overlay {
+    background-color: rgba(24, 24, 37, 0.88);
+    backdrop-filter: blur(20px);
+}
+
+/* Dashboard Styles */
 .dashboard-title {
     font-size: 24px;
     font-weight: 700;
-    color: #111827;
+    color: #cdd6f4;
     margin-bottom: 4px;
 }
 
 .dashboard-status {
     font-size: 14px;
-    color: #6B7280;
+    color: #a6adc8;
     margin-bottom: 16px;
 }
 
-/* Countdown cards - dark background with light text */
+/* Countdown cards */
 .countdown-card {
-    background-color: #1A1E24;
-    border: 1px solid #46505E;
+    background-color: #1e1e2e;
+    border: 1px solid #313244;
     border-radius: 14px;
     padding: 0;
     min-height: 100px;
 }
 
 .countdown-card label {
-    color: #F4F7FB;
+    color: #cdd6f4;
 }
 
 .card-label {
     font-size: 12px;
     font-weight: 600;
-    color: #C7D0E0;
+    color: #a6adc8;
     text-transform: uppercase;
     letter-spacing: 0.5px;
 }
@@ -45,31 +143,31 @@ window {
 .countdown-value {
     font-size: 28px;
     font-weight: 700;
-    color: #F4F7FB;
+    color: #cdd6f4;
     font-variant-numeric: tabular-nums;
 }
 
 .muted-text {
     font-size: 11px;
-    color: #98A4B8;
+    color: #a6adc8;
 }
 
-/* Statistics tiles - dark background with light text */
+/* Statistics tiles */
 .stat-tile {
-    background-color: #1A1E24;
-    border: 1px solid #46505E;
+    background-color: #1e1e2e;
+    border: 1px solid #313244;
     border-radius: 10px;
     padding: 12px;
     font-size: 13px;
     font-weight: 600;
-    color: #F4F7FB;
+    color: #cdd6f4;
     min-height: 40px;
 }
 
-/* Buttons */
+/* Action buttons */
 .primary-button {
-    background-color: #4DBCF3;
-    color: #07131C;
+    background-color: #89b4fa;
+    color: #11111b;
     border: none;
     border-radius: 10px;
     padding: 10px 16px;
@@ -79,17 +177,17 @@ window {
 }
 
 .primary-button:hover {
-    background-color: #67C8F7;
+    background-color: #b4befe;
 }
 
 .primary-button:active {
-    background-color: #32A9E3;
+    background-color: #74c7ec;
 }
 
 .secondary-button {
-    background-color: #20252D;
-    color: #F4F7FB;
-    border: 1px solid #46505E;
+    background-color: #1e1e2e;
+    color: #cdd6f4;
+    border: 1px solid #313244;
     border-radius: 10px;
     padding: 10px 16px;
     font-weight: 600;
@@ -98,51 +196,56 @@ window {
 }
 
 .secondary-button:hover {
-    background-color: #46505E;
-    border-color: #67C8F7;
+    background-color: #45475a;
+    border-color: #89b4fa;
 }
 
-/* Overlay */
+/* Overlay Styles */
 .overlay-bg {
-    background-color: #0E1116;
+    background-color: #181825;
 }
 
 .overlay-title {
     font-size: 28px;
     font-weight: 700;
-    color: #F4F7FB;
+    color: #cdd6f4;
 }
 
 .overlay-countdown {
     font-size: 72px;
     font-weight: 700;
-    color: #F4F7FB;
+    color: #89b4fa;
     font-variant-numeric: tabular-nums;
 }
 
 .overlay-instruction {
     font-size: 18px;
-    color: #C7D0E0;
+    color: #cdd6f4;
 }
 
 .overlay-instruction-secondary {
     font-size: 14px;
-    color: #98A4B8;
+    color: #a6adc8;
 }
 
 .overlay-btn {
-    background-color: #20252D;
-    color: #F4F7FB;
-    border: 1px solid #46505E;
+    background-color: #1e1e2e;
+    color: #cdd6f4;
+    border: 1px solid #313244;
     border-radius: 10px;
     padding: 10px 20px;
     font-weight: 600;
     min-width: 100px;
 }
 
+.overlay-btn:hover {
+    background-color: #45475a;
+    border-color: #89b4fa;
+}
+
 .overlay-btn-primary {
-    background-color: #4DBCF3;
-    color: #07131C;
+    background-color: #89b4fa;
+    color: #11111b;
     border: none;
     border-radius: 10px;
     padding: 10px 20px;
@@ -150,48 +253,52 @@ window {
     min-width: 100px;
 }
 
-/* Settings */
+.overlay-btn-primary:hover {
+    background-color: #b4befe;
+}
+
+/* Settings Styles */
 .settings-title {
     font-size: 22px;
     font-weight: 700;
-    color: #111827;
+    color: #cdd6f4;
 }
 
 .settings-subtitle {
     font-size: 13px;
-    color: #6B7280;
+    color: #a6adc8;
 }
 
 .settings-section {
-    background-color: #1A1E24;
-    border: 1px solid #46505E;
+    background-color: #1e1e2e;
+    border: 1px solid #313244;
     border-radius: 14px;
     padding: 16px;
 }
 
 /* All text inside settings sections must be light */
 .settings-section label {
-    color: #F4F7FB;
+    color: #cdd6f4;
 }
 
 .settings-section .section-title {
-    color: #4DBCF3;
+    color: #89b4fa;
 }
 
 .settings-section .muted-text {
-    color: #98A4B8;
+    color: #a6adc8;
 }
 
 .section-title {
     font-size: 16px;
     font-weight: 600;
-    color: #4DBCF3;
+    color: #89b4fa;
     margin-bottom: 8px;
 }
 
 .validation-label {
     font-size: 12px;
-    color: #FF6B6B;
+    color: #f38ba8;
     min-height: 20px;
 }
 
@@ -201,22 +308,50 @@ switch {
 }
 
 switch label {
-    color: #F4F7FB;
+    color: #cdd6f4;
 }
 
 spinbutton {
-    background-color: white;
-    color: #111827;
-    border: 1px solid #46505E;
+    background-color: #1e1e2e;
+    color: #cdd6f4;
+    border: 1px solid #313244;
     border-radius: 6px;
     padding: 4px 8px;
     min-width: 80px;
 }
 
+spinbutton:focus {
+    border-color: #89b4fa;
+}
+
 entry {
-    background-color: white;
-    color: #111827;
-    border: 1px solid #46505E;
+    background-color: #1e1e2e;
+    color: #cdd6f4;
+    border: 1px solid #313244;
     border-radius: 6px;
     padding: 4px 8px;
+}
+
+entry:focus {
+    border-color: #89b4fa;
+}
+
+/* Scrollbar styling */
+scrollbar {
+    background-color: #181825;
+}
+
+scrollbar trough {
+    background-color: #181825;
+}
+
+scrollbar slider {
+    background-color: #313244;
+    border-radius: 8px;
+    min-width: 8px;
+    min-height: 8px;
+}
+
+scrollbar slider:hover {
+    background-color: #89b4fa;
 }
