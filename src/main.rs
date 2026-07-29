@@ -46,7 +46,7 @@ fn main() -> glib::ExitCode {
 
         // Load custom CSS from resources/style.css
         let provider = gtk4::CssProvider::new();
-        provider.load_from_path("resources/style.css");
+        provider.load_from_data(include_str!("../resources/style.css"));
         if let Some(display) = gtk4::gdk::Display::default() {
             gtk4::style_context_add_provider_for_display(
                 &display,

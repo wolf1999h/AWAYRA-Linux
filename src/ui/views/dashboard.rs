@@ -37,6 +37,7 @@ impl DashboardWindow {
         }
 
         let main_box = gtk4::Box::new(Orientation::Vertical, 12);
+        main_box.add_css_class("card");
         main_box.set_margin_top(22);
         main_box.set_margin_bottom(20);
         main_box.set_margin_start(24);
@@ -126,10 +127,12 @@ impl DashboardWindow {
 
         let pause_btn = Button::with_label("Pause");
         pause_btn.add_css_class("secondary-button");
+        pause_btn.add_css_class("primary-btn");
         secondary_grid.attach(&pause_btn, 0, 0, 1, 1);
 
         let settings_btn = Button::with_label("Settings");
         settings_btn.add_css_class("secondary-button");
+        settings_btn.add_css_class("primary-btn");
         secondary_grid.attach(&settings_btn, 1, 0, 1, 1);
 
         main_box.append(&secondary_grid);
