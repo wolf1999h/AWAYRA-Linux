@@ -44,14 +44,14 @@ fn main() -> glib::ExitCode {
             gtk_settings.set_gtk_application_prefer_dark_theme(true);
         }
 
-        // Load custom CSS from resources/style.css
+        // Load custom CSS from resources/style.css embedded directly into the binary
         let provider = gtk4::CssProvider::new();
         provider.load_from_data(include_str!("../resources/style.css"));
         if let Some(display) = gtk4::gdk::Display::default() {
             gtk4::style_context_add_provider_for_display(
                 &display,
                 &provider,
-                gtk4::STYLE_PROVIDER_PRIORITY_APPLICATION,
+                gtk4::STYLE_PROVIDER_PRIORITY_USER,
             );
         }
 

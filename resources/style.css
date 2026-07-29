@@ -1,7 +1,7 @@
 /* Awayra Modern Dark Palette - Catppuccin Mocha inspired */
 
 /* Global */
-window {
+window, window.background, window.dialog {
     background-color: #181825;
     color: #cdd6f4;
     font-family: 'Inter', 'Ubuntu', 'Cantarell', sans-serif;
