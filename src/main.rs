@@ -46,14 +46,13 @@ fn main() -> glib::ExitCode {
 
         // Load custom CSS from resources/style.css
         let provider = gtk4::CssProvider::new();
-        if provider.load_from_path("resources/style.css").is_ok() {
-            if let Some(display) = gdk4::Display::default() {
-                gtk4::style_context_add_provider_for_display(
-                    &display,
-                    &provider,
-                    gtk4::STYLE_PROVIDER_PRIORITY_APPLICATION,
-                );
-            }
+        provider.load_from_path("resources/style.css");
+        if let Some(display) = gtk4::gdk::Display::default() {
+            gtk4::style_context_add_provider_for_display(
+                &display,
+                &provider,
+                gtk4::STYLE_PROVIDER_PRIORITY_APPLICATION,
+            );
         }
 
         // Create dashboard
