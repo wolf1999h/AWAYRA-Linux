@@ -32,6 +32,18 @@ impl Default for AppTheme {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+pub enum AppLanguage {
+    English = 0,
+    Persian = 1,
+}
+
+impl Default for AppLanguage {
+    fn default() -> Self {
+        Self::English
+    }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 pub enum BreakSoundTheme {
     SoftBell = 0,
     GentleChime = 1,

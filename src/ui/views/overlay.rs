@@ -27,6 +27,8 @@ pub struct OverlayWindow {
 
 impl OverlayWindow {
     pub fn new(app: &gtk4::Application, host: Arc<Mutex<AppHost>>) -> Self {
+        let loc = host.lock().unwrap().localization.clone();
+
         let display = gtk4::gdk::Display::default().expect("No display found");
         let monitors = display.monitors();
         let monitor_count = monitors.n_items().max(1);
@@ -35,7 +37,7 @@ impl OverlayWindow {
         let mut bg_pictures = Vec::new();
         let mut monitor_sizes = Vec::new();
 
-        let title_label = Label::new(Some("Break Time"));
+        let title_label = Label::new(Some(&loc.get("EyeReset")));
         title_label.add_css_class("overlay-title");
 
         let countdown_label = Label::new(Some("0"));
@@ -49,20 +51,20 @@ impl OverlayWindow {
         let exercise_box = GtkBox::new(Orientation::Vertical, 8);
         exercise_box.set_halign(Align::Center);
 
-        // Buttons matching BreakOverlayWindow.xaml
+        // Buttons
         let btn_box = GtkBox::new(Orientation::Horizontal, 8);
         btn_box.set_halign(Align::Center);
 
-        let sound_btn = Button::with_label("Mute");
+        let sound_btn = Button::with_label(&loc.get("Mute"));
         sound_btn.add_css_class("secondary-button");
 
-        let skip_btn = Button::with_label("Skip");
+        let skip_btn = Button::with_label(&loc.get("Skip"));
         skip_btn.add_css_class("secondary-button");
 
-        let snooze_btn = Button::with_label("Snooze");
+        let snooze_btn = Button::with_label(&loc.get("Snooze"));
         snooze_btn.add_css_class("secondary-button");
 
-        let complete_btn = Button::with_label("Complete");
+        let complete_btn = Button::with_label(&loc.get("Complete"));
         complete_btn.add_css_class("primary-button");
 
         btn_box.append(&sound_btn);
@@ -84,7 +86,7 @@ impl OverlayWindow {
             monitor_sizes.push((mon_w, mon_h));
 
             let window = ApplicationWindow::new(app);
-            window.set_title(Some("Awayra Break"));
+            window.set_title(Some(&loc.get("AppTitle")));
             window.set_decorated(false);
             window.set_resizable(true);
             window.set_default_size(mon_w, mon_h);
@@ -126,7 +128,7 @@ impl OverlayWindow {
             overlay_stack.set_child(Some(&bg_picture));
 
             if i == 0 {
-                // Main monitor: WPF BreakOverlayWindow Card
+                // Main monitor
                 let card = GtkBox::new(Orientation::Vertical, 16);
                 card.set_halign(Align::Center);
                 card.set_valign(Align::Center);
@@ -135,7 +137,7 @@ impl OverlayWindow {
                 title_label.set_halign(Align::Center);
                 card.append(&title_label);
 
-                // Circular countdown ring container (150x150)
+                // Circular countdown ring container
                 let ring_box = GtkBox::new(Orientation::Vertical, 0);
                 ring_box.add_css_class("timer-ring-box");
                 ring_box.set_halign(Align::Center);
@@ -154,16 +156,16 @@ impl OverlayWindow {
 
                 overlay_stack.add_overlay(&card);
             } else {
-                // Secondary monitors: Peaceful Dim Card
+                // Secondary monitors
                 let card = GtkBox::new(Orientation::Vertical, 16);
                 card.set_halign(Align::Center);
                 card.set_valign(Align::Center);
                 card.add_css_class("overlay-card");
 
-                let sec_title = Label::new(Some("Awayra"));
+                let sec_title = Label::new(Some(&loc.get("AppTitle")));
                 sec_title.add_css_class("overlay-title");
 
-                let sec_sub = Label::new(Some("Take a break and rest your eyes"));
+                let sec_sub = Label::new(Some(&loc.get("TakeABreak")));
                 sec_sub.add_css_class("overlay-instruction-primary");
 
                 card.append(&sec_title);
@@ -215,7 +217,8 @@ impl OverlayWindow {
         sound_btn.connect_clicked(move |_| {
             if let Ok(host_ref) = h_sound.lock() {
                 host_ref.audio_service.stop_repeating();
-                sound_btn_clone.set_label("Muted");
+                let loc = &host_ref.localization;
+                sound_btn_clone.set_label(&loc.get("Muted"));
                 sound_btn_clone.set_sensitive(false);
             }
         });
@@ -249,7 +252,12 @@ impl OverlayWindow {
 
         if let Ok(host_lock) = self.host.lock() {
             let settings = host_lock.settings.lock().unwrap().clone();
-            let loc = &host_lock.localization;
+            let loc = host_lock.localization.clone();
+
+            self.sound_btn.set_label(&loc.get("Mute"));
+            self.skip_btn.set_label(&loc.get("Skip"));
+            self.snooze_btn.set_label(&loc.get("Snooze"));
+            self.complete_btn.set_label(&loc.get("Complete"));
 
             match args.break_type {
                 BreakType::Eye => {
@@ -258,7 +266,7 @@ impl OverlayWindow {
                         loc.get("EyeResetInstructionDistance"),
                         loc.get("EyeResetInstructionBlink")));
 
-                    let eye = super::eye_exercise::EyeExerciseView::new();
+                    let eye = super::eye_exercise::EyeExerciseView::new(loc.clone());
                     self.exercise_box.append(&eye.container);
                     self.eye_view = Some(eye);
                     self.move_view = None;
@@ -267,7 +275,7 @@ impl OverlayWindow {
                     self.title_label.set_text(&loc.get("MoveBreak"));
                     self.instruction_label.set_text(&loc.get_move_activity(args.activity_index));
 
-                    let mv = super::move_exercise::MoveExerciseView::new(args.activity_index as usize);
+                    let mv = super::move_exercise::MoveExerciseView::new(args.activity_index as usize, loc.clone());
                     self.exercise_box.append(&mv.container);
                     self.move_view = Some(mv);
                     self.eye_view = None;
@@ -276,7 +284,6 @@ impl OverlayWindow {
 
             self.skip_btn.set_visible(settings.allow_skip);
             self.snooze_btn.set_visible(settings.allow_snooze);
-            self.sound_btn.set_label("Mute");
             self.sound_btn.set_sensitive(true);
 
             // Custom background image takes priority over screenshot capture.
@@ -298,11 +305,6 @@ impl OverlayWindow {
             if custom_applied {
                 // No screenshot capture needed; background is ready.
             } else if settings.capture_screenshot {
-                // Capture and apply BEFORE the overlay window is shown, so the
-                // screenshot contains only the desktop (not the overlay itself)
-                // and the texture is ready for the first map with no flicker.
-                // Any failure (X11/Wayland/portal) falls back to the clear
-                // background instead of crashing the app.
                 let result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
                     host_lock.screenshot_service.capture()
                 }))
@@ -324,9 +326,6 @@ impl OverlayWindow {
 
         self.countdown_label.set_text(&format!("{}", args.duration_seconds));
         for (idx, window) in self.windows.iter().enumerate() {
-            // Re-assert exact fullscreen geometry on every show. Without this,
-            // a window whose content measures ~0x0 (empty screenshot Picture)
-            // can map at a tiny floating size instead of covering the monitor.
             if let Some(mon_item) = gtk4::gdk::Display::default()
                 .and_then(|d| d.monitors().item(idx as u32))
             {
@@ -374,9 +373,6 @@ impl OverlayWindow {
 
         eprintln!("[Awayra] Loading custom background image: {:?}", path);
 
-        // Load the image synchronously with GDK's built-in loader, scaled to
-        // the monitor size at decode time. This avoids the async race where
-        // set_file() would load after the window is mapped and never render.
         let res = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
             gtk4::gdk_pixbuf::Pixbuf::from_file_at_scale(path, -1, -1, false)
         }));
@@ -385,7 +381,6 @@ impl OverlayWindow {
             Ok(Ok(p)) => p,
             Ok(Err(err)) => {
                 eprintln!("[Awayra] Failed to load custom background via pixbuf: {}", err);
-                // last resort: GTK's async set_file
                 let file = gtk4::gio::File::for_path(path);
                 for bg in bg_pictures {
                     bg.set_file(Some(&file));
@@ -454,7 +449,6 @@ impl OverlayWindow {
         for (i, bg) in bg_pictures.iter().enumerate() {
             let (mon_w, mon_h) = monitor_sizes.get(i).copied().unwrap_or((800, 600));
 
-            // Scale pixbuf to match exact monitor resolution if dimensions differ
             if mon_w > 0 && mon_h > 0 && (result.width != mon_w || result.height != mon_h) {
                 if let Some(scaled) = orig_pixbuf.scale_simple(
                     mon_w,

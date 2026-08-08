@@ -1,23 +1,25 @@
 use gtk4::prelude::*;
 use gtk4::{Box as GtkBox, Label, Orientation, Align, ProgressBar};
+use std::sync::Arc;
+use crate::core::localization::LocalizationService;
 
 pub struct EyeExerciseView {
     pub container: GtkBox,
     step_label: Label,
     instruction_label: Label,
     progress_bar: ProgressBar,
-    steps: Vec<(&'static str, &'static str, u32)>,
+    loc: Arc<LocalizationService>,
     current_step: usize,
     step_elapsed: u32,
 }
 
 impl EyeExerciseView {
-    pub fn new() -> Self {
+    pub fn new(loc: Arc<LocalizationService>) -> Self {
         let container = GtkBox::new(Orientation::Vertical, 12);
         container.set_halign(Align::Center);
         container.set_valign(Align::Center);
 
-        let step_label = Label::new(Some("Step 1 of 4"));
+        let step_label = Label::new(None);
         step_label.add_css_class("subtitle-label");
         step_label.set_halign(Align::Center);
         container.append(&step_label);
@@ -31,7 +33,7 @@ impl EyeExerciseView {
         animation_box.append(&eye_icon);
         container.append(&animation_box);
 
-        let instruction_label = Label::new(Some("Look away at an object at least 20 feet (6 meters) away."));
+        let instruction_label = Label::new(None);
         instruction_label.add_css_class("overlay-instruction");
         instruction_label.set_wrap(true);
         instruction_label.set_justify(gtk4::Justification::Center);
@@ -43,19 +45,12 @@ impl EyeExerciseView {
         progress_bar.set_halign(Align::Center);
         container.append(&progress_bar);
 
-        let steps = vec![
-            ("Distance Focus", "Look at a distant object 20 feet away to relax your eye focusing muscles.", 5),
-            ("Blink Consciously", "Blink slowly 5-10 times to moisten and soothe your eyes.", 5),
-            ("Side to Side", "Slowly roll your eyes left to right 3 times.", 5),
-            ("Palming", "Rub hands together to generate warmth and gently cup them over your closed eyes.", 5),
-        ];
-
         let mut view = Self {
             container,
             step_label,
             instruction_label,
             progress_bar,
-            steps,
+            loc,
             current_step: 0,
             step_elapsed: 0,
         };
@@ -64,17 +59,43 @@ impl EyeExerciseView {
         view
     }
 
+    fn get_step_info(&self, index: usize) -> Option<(String, String, u32)> {
+        match index {
+            0 => Some((
+                self.loc.get("EyeStep1Title"),
+                self.loc.get("EyeStep1Desc"),
+                5,
+            )),
+            1 => Some((
+                self.loc.get("EyeStep2Title"),
+                self.loc.get("EyeStep2Desc"),
+                5,
+            )),
+            2 => Some((
+                self.loc.get("EyeStep3Title"),
+                self.loc.get("EyeStep3Desc"),
+                5,
+            )),
+            3 => Some((
+                self.loc.get("EyeStep4Title"),
+                self.loc.get("EyeStep4Desc"),
+                5,
+            )),
+            _ => None,
+        }
+    }
+
     pub fn tick(&mut self) {
-        if self.current_step >= self.steps.len() {
+        if self.current_step >= 4 {
             return;
         }
 
-        let duration = self.steps[self.current_step].2;
+        let duration = self.get_step_info(self.current_step).map(|s| s.2).unwrap_or(5);
         self.step_elapsed += 1;
 
         if self.step_elapsed >= duration {
             self.step_elapsed = 0;
-            if self.current_step + 1 < self.steps.len() {
+            if self.current_step + 1 < 4 {
                 self.current_step += 1;
             } else {
                 self.step_elapsed = duration;
@@ -85,10 +106,15 @@ impl EyeExerciseView {
     }
 
     fn update_display(&mut self) {
-        if let Some((name, desc, duration)) = self.steps.get(self.current_step) {
-            self.step_label.set_text(&format!("Step {} of {}: {}", self.current_step + 1, self.steps.len(), name));
-            self.instruction_label.set_text(desc);
-            let fraction = (self.step_elapsed as f64) / (*duration as f64);
+        if let Some((name, desc, duration)) = self.get_step_info(self.current_step) {
+            let progress_tmpl = self.loc.get("StepProgress");
+            let step_str = progress_tmpl
+                .replace("{0}", &(self.current_step + 1).to_string())
+                .replace("{1}", "4")
+                .replace("{2}", &name);
+            self.step_label.set_text(&step_str);
+            self.instruction_label.set_text(&desc);
+            let fraction = (self.step_elapsed as f64) / (duration as f64);
             self.progress_bar.set_fraction(fraction.clamp(0.0, 1.0));
         }
     }

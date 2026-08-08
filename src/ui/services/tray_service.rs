@@ -2,6 +2,7 @@ use std::sync::Arc;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::mpsc::Sender;
 use ksni::ToolTip;
+use crate::core::localization::LocalizationService;
 
 /// Action commands from Tray to GLib main thread
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -19,8 +20,8 @@ pub enum TrayCommand {
 pub struct TrayService {
     enabled: Arc<AtomicBool>,
     cmd_tx: Option<Sender<TrayCommand>>,
-    // Shared state enabling the tray menu/tooltip to reflect scheduler status.
     status: Arc<TrayStatus>,
+    loc: Arc<LocalizationService>,
 }
 
 /// Shared, pollable status the GLib main loop refreshes for the tray.
@@ -60,11 +61,12 @@ impl TrayStatus {
 }
 
 impl TrayService {
-    pub fn new(cmd_tx: Option<Sender<TrayCommand>>) -> Self {
+    pub fn new(cmd_tx: Option<Sender<TrayCommand>>, loc: Arc<LocalizationService>) -> Self {
         Self {
             enabled: Arc::new(AtomicBool::new(true)),
             cmd_tx,
             status: Arc::new(TrayStatus::default()),
+            loc,
         }
     }
 
@@ -96,7 +98,6 @@ fn load_tray_icon() -> Vec<ksni::Icon> {
 
         for pixel in rgba.pixels() {
             let [r, g, b, a] = pixel.0;
-            // ARGB32 network byte order (MSB to LSB: A, R, G, B)
             argb.push(a);
             argb.push(r);
             argb.push(g);
@@ -152,10 +153,11 @@ impl ksni::Tray for TrayService {
     fn menu(&self) -> Vec<ksni::MenuItem<Self>> {
         use ksni::menu::*;
         let paused = self.status.paused.load(Ordering::Relaxed);
+        let loc = &self.loc;
 
         vec![
             StandardItem {
-                label: "Open Awayra".to_string(),
+                label: loc.get("OpenAwayra"),
                 icon_name: "application-x-executable-symbolic".to_string(),
                 activate: Box::new(|service: &mut Self| {
                     service.send(TrayCommand::ShowDashboard);
@@ -163,7 +165,7 @@ impl ksni::Tray for TrayService {
                 ..Default::default()
             }.into(),
             StandardItem {
-                label: "Eye Reset Now".to_string(),
+                label: loc.get("EyeResetNow"),
                 icon_name: "eye-open-negative-filled-symbolic".to_string(),
                 activate: Box::new(|service: &mut Self| {
                     service.send(TrayCommand::EyeNow);
@@ -171,7 +173,7 @@ impl ksni::Tray for TrayService {
                 ..Default::default()
             }.into(),
             StandardItem {
-                label: "Move Break Now".to_string(),
+                label: loc.get("MoveBreakNow"),
                 icon_name: "media-playback-start-symbolic".to_string(),
                 activate: Box::new(|service: &mut Self| {
                     service.send(TrayCommand::MoveNow);
@@ -179,7 +181,7 @@ impl ksni::Tray for TrayService {
                 ..Default::default()
             }.into(),
             StandardItem {
-                label: if paused { "Resume Reminders".into() } else { "Pause Reminders".into() },
+                label: if paused { loc.get("TrayResumeReminders") } else { loc.get("TrayPauseReminders") },
                 icon_name: if paused { "media-playback-start-symbolic".to_string() } else { "media-playback-pause-symbolic".to_string() },
                 activate: Box::new(|service: &mut Self| {
                     service.send(TrayCommand::TogglePause);
@@ -187,11 +189,11 @@ impl ksni::Tray for TrayService {
                 ..Default::default()
             }.into(),
             SubMenu {
-                label: "Pause for…".to_string(),
+                label: loc.get("TrayPauseFor"),
                 icon_name: "alarm-symbolic".to_string(),
                 submenu: vec![
                     StandardItem {
-                        label: "Pause for 30 minutes".to_string(),
+                        label: loc.get("TrayPause30m"),
                         icon_name: "alarm-symbolic".to_string(),
                         activate: Box::new(|service: &mut Self| {
                             service.send(TrayCommand::PauseFor { minutes: 30 });
@@ -199,7 +201,7 @@ impl ksni::Tray for TrayService {
                         ..Default::default()
                     }.into(),
                     StandardItem {
-                        label: "Pause for 1 hour".to_string(),
+                        label: loc.get("TrayPause1h"),
                         icon_name: "alarm-symbolic".to_string(),
                         activate: Box::new(|service: &mut Self| {
                             service.send(TrayCommand::PauseFor { minutes: 60 });
@@ -207,7 +209,7 @@ impl ksni::Tray for TrayService {
                         ..Default::default()
                     }.into(),
                     StandardItem {
-                        label: "Pause until tomorrow".to_string(),
+                        label: loc.get("TrayPauseTomorrow"),
                         icon_name: "alarm-symbolic".to_string(),
                         activate: Box::new(|service: &mut Self| {
                             service.send(TrayCommand::PauseUntilTomorrow);
@@ -218,16 +220,16 @@ impl ksni::Tray for TrayService {
                 ..Default::default()
             }.into(),
             StandardItem {
-                label: "Settings".to_string(),
+                label: loc.get("Settings"),
                 icon_name: "emblem-system-symbolic".to_string(),
                 activate: Box::new(|service: &mut Self| {
-                    service.send(TrayCommand::ShowDashboard);
+                    service.send(TrayCommand::ShowSettings);
                 }),
                 ..Default::default()
             }.into(),
             MenuItem::Separator,
             StandardItem {
-                label: "Quit".to_string(),
+                label: loc.get("Quit"),
                 icon_name: "application-exit-symbolic".to_string(),
                 activate: Box::new(|service: &mut Self| {
                     service.send(TrayCommand::Quit);

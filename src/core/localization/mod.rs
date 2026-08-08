@@ -1,20 +1,35 @@
 pub mod strings;
 
+use std::sync::atomic::{AtomicU8, Ordering};
 use strings::Strings;
+use crate::core::models::AppLanguage;
 
 pub struct LocalizationService {
     strings: Strings,
+    current_lang: AtomicU8,
 }
 
 impl LocalizationService {
-    pub fn new() -> Self {
+    pub fn new(lang: AppLanguage) -> Self {
         Self {
             strings: Strings::new(),
+            current_lang: AtomicU8::new(lang as u8),
+        }
+    }
+
+    pub fn set_language(&self, lang: AppLanguage) {
+        self.current_lang.store(lang as u8, Ordering::Relaxed);
+    }
+
+    pub fn language(&self) -> AppLanguage {
+        match self.current_lang.load(Ordering::Relaxed) {
+            1 => AppLanguage::Persian,
+            _ => AppLanguage::English,
         }
     }
 
     pub fn get(&self, key: &str) -> String {
-        self.strings.get(key)
+        self.strings.get(key, self.language())
     }
 
     pub fn get_status(&self, status: crate::core::models::SchedulerStatus) -> String {
@@ -44,6 +59,6 @@ impl LocalizationService {
 
 impl Default for LocalizationService {
     fn default() -> Self {
-        Self::new()
+        Self::new(AppLanguage::English)
     }
 }

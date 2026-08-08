@@ -1,5 +1,5 @@
 use serde::{Deserialize, Serialize};
-use crate::core::models::AppTheme;
+use crate::core::models::{AppTheme, AppLanguage};
 
 pub const DEFAULT_EYE_INTERVAL_MINUTES: i32 = 20;
 pub const DEFAULT_EYE_DURATION_SECONDS: i32 = 20;
@@ -42,6 +42,8 @@ pub struct AppSettings {
     pub glass_clarity: i32,
     pub reduced_motion: bool,
     pub theme: AppTheme,
+    #[serde(default)]
+    pub language: AppLanguage,
 
     /// Sound configuration
     pub eye_break_sound_enabled: bool,
@@ -93,6 +95,7 @@ impl Default for AppSettings {
             glass_clarity: DEFAULT_GLASS_CLARITY,
             reduced_motion: false,
             theme: AppTheme::Dark,
+            language: AppLanguage::Persian,
 
             eye_break_sound_enabled: true,
             move_break_sound_enabled: true,

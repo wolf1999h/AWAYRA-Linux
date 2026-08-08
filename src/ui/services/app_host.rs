@@ -82,7 +82,7 @@ impl AppHost {
             StatisticsService::new(stats_data)
         ));
 
-        let localization = std::sync::Arc::new(LocalizationService::new());
+        let localization = std::sync::Arc::new(LocalizationService::new(settings.language));
         let audio_service = std::sync::Arc::new(crate::core::services::audio_service::AudioService::new());
         let idle_monitor = std::sync::Arc::new(IdleMonitor::new());
         let screenshot_service = std::sync::Arc::new(ScreenshotService::new());
@@ -173,6 +173,9 @@ impl AppHost {
         let mut old_settings = self.settings.lock().map_err(|e| e.to_string())?;
         *old_settings = new_settings.clone();
         drop(old_settings);
+
+        // Update localization language
+        self.localization.set_language(new_settings.language);
 
         // Apply to scheduler
         if let Ok(mut sched) = self.scheduler.lock() {

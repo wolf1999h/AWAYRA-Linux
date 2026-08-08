@@ -1,14 +1,16 @@
 use gtk4::prelude::*;
 use gtk4::{Window, Label, Button, Box as GtkBox, Orientation, Align};
+use std::sync::Arc;
+use crate::core::localization::LocalizationService;
 
 pub struct AboutWindow {
     window: Window,
 }
 
 impl AboutWindow {
-    pub fn new() -> Self {
+    pub fn new(loc: Arc<LocalizationService>) -> Self {
         let window = Window::new();
-        window.set_title(Some("About Awayra"));
+        window.set_title(Some(&loc.get("AboutTitle")));
         window.set_default_size(400, 480);
         window.set_resizable(false);
 
@@ -24,15 +26,15 @@ impl AboutWindow {
         icon_label.add_css_class("dashboard-title");
         vbox.append(&icon_label);
 
-        let app_name = Label::new(Some("Awayra"));
+        let app_name = Label::new(Some(&loc.get("AppTitle")));
         app_name.add_css_class("title-label");
         vbox.append(&app_name);
 
-        let version = Label::new(Some("Version 1.0.0 (Linux Rust Port)"));
+        let version = Label::new(Some(&loc.get("AboutVersion")));
         version.add_css_class("subtitle-label");
         vbox.append(&version);
 
-        let desc = Label::new(Some("A calm, non-intrusive break reminder to help reduce eye strain and promote healthy movement habits during long computer sessions."));
+        let desc = Label::new(Some(&loc.get("AboutDescription")));
         desc.set_wrap(true);
         desc.set_justify(gtk4::Justification::Center);
         desc.add_css_class("muted-text");
@@ -41,11 +43,11 @@ impl AboutWindow {
         let btn_box = GtkBox::new(Orientation::Horizontal, 12);
         btn_box.set_halign(Align::Center);
 
-        let github_btn = Button::with_label("GitHub");
+        let github_btn = Button::with_label(&loc.get("GitHub"));
         github_btn.add_css_class("secondary-button");
         btn_box.append(&github_btn);
 
-        let close_btn = Button::with_label("Close");
+        let close_btn = Button::with_label(&loc.get("Close"));
         close_btn.add_css_class("primary-btn");
         btn_box.append(&close_btn);
 

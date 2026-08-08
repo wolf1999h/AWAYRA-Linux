@@ -18,14 +18,24 @@ pub struct DashboardWindow {
     today_move: Label,
     today_skipped: Label,
     today_snoozed: Label,
+    eye_card_title: Label,
+    move_card_title: Label,
+    eye_btn: Button,
+    move_btn: Button,
     pause_btn: Button,
     settings_btn: Button,
+    about_title: Label,
+    about_sub: Label,
 }
 
 impl DashboardWindow {
     pub fn new(app: &gtk4::Application, host: Arc<Mutex<AppHost>>) -> Self {
+        let host_lock = host.lock().unwrap();
+        let loc = host_lock.localization.clone();
+        drop(host_lock);
+
         let window = ApplicationWindow::new(app);
-        window.set_title(Some("Awayra"));
+        window.set_title(Some(&loc.get("AppTitle")));
         window.set_default_size(460, 710);
         window.set_resizable(true);
         window.set_icon_name(Some("com.awayra.Awayra"));
@@ -42,17 +52,17 @@ impl DashboardWindow {
 
         // Icon
         let icon = gtk4::Image::from_file("resources/icons/awayra.png");
-        icon.set_pixel_size(48); // Set a reasonable size for the header
+        icon.set_pixel_size(48);
         header_container.append(&icon);
 
         let header_text_box = GtkBox::new(Orientation::Vertical, 6);
 
-        let title = Label::new(Some("Awayra"));
+        let title = Label::new(Some(&loc.get("AppTitle")));
         title.add_css_class("title-label");
         title.set_halign(gtk4::Align::Start);
         header_text_box.append(&title);
 
-        let status_label = Label::new(Some("Starting..."));
+        let status_label = Label::new(Some(&loc.get("Starting")));
         status_label.add_css_class("subtitle-label");
         status_label.set_halign(gtk4::Align::Start);
         header_text_box.append(&status_label);
@@ -66,10 +76,10 @@ impl DashboardWindow {
         cards_grid.set_column_spacing(12);
         cards_grid.set_margin_bottom(16);
 
-        let (eye_countdown, eye_state, eye_frame) = Self::make_card("EYE RESET", "card-accent-eye");
+        let (eye_countdown, eye_state, eye_card_title, eye_frame) = Self::make_card(&loc.get("CardEyeReset"), "card-accent-eye");
         cards_grid.attach(&eye_frame, 0, 0, 1, 1);
 
-        let (move_countdown, move_state, move_frame) = Self::make_card("MOVE BREAK", "card-accent-move");
+        let (move_countdown, move_state, move_card_title, move_frame) = Self::make_card(&loc.get("CardMoveBreak"), "card-accent-move");
         cards_grid.attach(&move_frame, 1, 0, 1, 1);
 
         main_box.append(&cards_grid);
@@ -85,19 +95,19 @@ impl DashboardWindow {
         stats_grid.set_row_spacing(6);
         stats_grid.set_column_spacing(6);
 
-        let today_eye = Label::new(Some("Eye Reset: 0"));
+        let today_eye = Label::new(Some(&format!("{}: 0", loc.get("TodayEyeCompleted"))));
         today_eye.add_css_class("stat-tile");
         stats_grid.attach(&today_eye, 0, 0, 1, 1);
 
-        let today_move = Label::new(Some("Move Break: 0"));
+        let today_move = Label::new(Some(&format!("{}: 0", loc.get("TodayMoveCompleted"))));
         today_move.add_css_class("stat-tile");
         stats_grid.attach(&today_move, 1, 0, 1, 1);
 
-        let today_skipped = Label::new(Some("Skipped: 0"));
+        let today_skipped = Label::new(Some(&format!("{}: 0", loc.get("TodaySkipped"))));
         today_skipped.add_css_class("stat-tile");
         stats_grid.attach(&today_skipped, 0, 1, 1, 1);
 
-        let today_snoozed = Label::new(Some("Snoozed: 0"));
+        let today_snoozed = Label::new(Some(&format!("{}: 0", loc.get("TodaySnoozed"))));
         today_snoozed.add_css_class("stat-tile");
         stats_grid.attach(&today_snoozed, 1, 1, 1, 1);
 
@@ -115,11 +125,11 @@ impl DashboardWindow {
         action_grid.set_column_spacing(12);
         action_grid.set_margin_bottom(10);
 
-        let eye_btn = Button::with_label("Eye Reset Now");
+        let eye_btn = Button::with_label(&loc.get("EyeResetNow"));
         eye_btn.add_css_class("primary-button");
         action_grid.attach(&eye_btn, 0, 0, 1, 1);
 
-        let move_btn = Button::with_label("Move Break Now");
+        let move_btn = Button::with_label(&loc.get("MoveBreakNow"));
         move_btn.add_css_class("primary-button");
         action_grid.attach(&move_btn, 1, 0, 1, 1);
 
@@ -131,11 +141,11 @@ impl DashboardWindow {
         secondary_grid.set_column_spacing(12);
         secondary_grid.set_margin_bottom(12);
 
-        let pause_btn = Button::with_label("Pause");
+        let pause_btn = Button::with_label(&loc.get("Pause"));
         pause_btn.add_css_class("secondary-button");
         secondary_grid.attach(&pause_btn, 0, 0, 1, 1);
 
-        let settings_btn = Button::with_label("Settings");
+        let settings_btn = Button::with_label(&loc.get("Settings"));
         settings_btn.add_css_class("secondary-button");
         secondary_grid.attach(&settings_btn, 1, 0, 1, 1);
 
@@ -146,11 +156,11 @@ impl DashboardWindow {
         about_card_btn.add_css_class("about-support-button");
 
         let about_vbox = GtkBox::new(Orientation::Vertical, 2);
-        let about_title = Label::new(Some("About & Support Awayra"));
+        let about_title = Label::new(Some(&loc.get("AboutSupportTitle")));
         about_title.add_css_class("about-support-title");
         about_title.set_halign(gtk4::Align::Start);
 
-        let about_sub = Label::new(Some("Built with love for people who spend long hours at a computer."));
+        let about_sub = Label::new(Some(&loc.get("AboutSupportSub")));
         about_sub.add_css_class("about-support-sub");
         about_sub.set_halign(gtk4::Align::Start);
         about_sub.set_wrap(true);
@@ -210,8 +220,10 @@ impl DashboardWindow {
             settings_win.show();
         });
 
-        about_card_btn.connect_clicked(|_| {
-            let about_win = crate::ui::views::about::AboutWindow::new();
+        let h_about = host.clone();
+        about_card_btn.connect_clicked(move |_| {
+            let loc = h_about.lock().unwrap().localization.clone();
+            let about_win = crate::ui::views::about::AboutWindow::new(loc);
             about_win.show();
         });
 
@@ -227,48 +239,72 @@ impl DashboardWindow {
             today_move,
             today_skipped,
             today_snoozed,
+            eye_card_title,
+            move_card_title,
+            eye_btn,
+            move_btn,
             pause_btn,
             settings_btn,
+            about_title,
+            about_sub,
         };
 
         // Refresh timer
         let host_ref = dashboard.host.clone();
+        let win_lbl = dashboard.window.clone();
         let status_lbl = dashboard.status_label.clone();
         let eye_cd = dashboard.eye_countdown.clone();
         let move_cd = dashboard.move_countdown.clone();
         let eye_st = dashboard.eye_state.clone();
         let move_st = dashboard.move_state.clone();
+        let eye_ct = dashboard.eye_card_title.clone();
+        let move_ct = dashboard.move_card_title.clone();
         let t_eye = dashboard.today_eye.clone();
         let t_move = dashboard.today_move.clone();
         let t_skip = dashboard.today_skipped.clone();
         let t_snooze = dashboard.today_snoozed.clone();
-        let pause = dashboard.pause_btn.clone();
+        let eye_b = dashboard.eye_btn.clone();
+        let move_b = dashboard.move_btn.clone();
+        let pause_b = dashboard.pause_btn.clone();
+        let settings_b = dashboard.settings_btn.clone();
+        let ab_title = dashboard.about_title.clone();
+        let ab_sub = dashboard.about_sub.clone();
 
         timeout_add_seconds_local(1, move || {
             if let Ok(host_lock) = host_ref.lock() {
+                let loc = &host_lock.localization;
+
+                win_lbl.set_title(Some(&loc.get("AppTitle")));
+                eye_ct.set_text(&loc.get("CardEyeReset"));
+                move_ct.set_text(&loc.get("CardMoveBreak"));
+                eye_b.set_label(&loc.get("EyeResetNow"));
+                move_b.set_label(&loc.get("MoveBreakNow"));
+                settings_b.set_label(&loc.get("Settings"));
+                ab_title.set_text(&loc.get("AboutSupportTitle"));
+                ab_sub.set_text(&loc.get("AboutSupportSub"));
+
                 if let Ok(sched) = host_lock.scheduler.lock() {
                     let snapshot = sched.get_snapshot();
-                    let loc = &host_lock.localization;
 
                     status_lbl.set_text(&loc.get_status(snapshot.status));
 
                     let eye_secs = snapshot.eye_remaining.num_seconds().max(0);
                     eye_cd.set_text(&format!("{:02}:{:02}", eye_secs / 60, eye_secs % 60));
-                    eye_st.set_text(if snapshot.eye_enabled { "Enabled" } else { "Disabled" });
+                    eye_st.set_text(&loc.get(if snapshot.eye_enabled { "Enabled" } else { "Disabled" }));
 
                     let move_secs = snapshot.move_remaining.num_seconds().max(0);
                     move_cd.set_text(&format!("{:02}:{:02}", move_secs / 60, move_secs % 60));
-                    move_st.set_text(if snapshot.move_enabled { "Enabled" } else { "Disabled" });
+                    move_st.set_text(&loc.get(if snapshot.move_enabled { "Enabled" } else { "Disabled" }));
 
-                    pause.set_label(if snapshot.is_paused_manual { "Resume" } else { "Pause" });
+                    pause_b.set_label(&loc.get(if snapshot.is_paused_manual { "Resume" } else { "Pause" }));
                 }
 
                 if let Ok(stats) = host_lock.statistics.lock() {
                     let today = stats.get_today();
-                    t_eye.set_text(&format!("Eye Reset: {}", today.eye_completed));
-                    t_move.set_text(&format!("Move Break: {}", today.move_completed));
-                    t_skip.set_text(&format!("Skipped: {}", today.skipped));
-                    t_snooze.set_text(&format!("Snoozed: {}", today.snoozed));
+                    t_eye.set_text(&format!("{}: {}", loc.get("TodayEyeCompleted"), today.eye_completed));
+                    t_move.set_text(&format!("{}: {}", loc.get("TodayMoveCompleted"), today.move_completed));
+                    t_skip.set_text(&format!("{}: {}", loc.get("TodaySkipped"), today.skipped));
+                    t_snooze.set_text(&format!("{}: {}", loc.get("TodaySnoozed"), today.snoozed));
                 }
             }
             gtk4::glib::ControlFlow::Continue
@@ -277,7 +313,7 @@ impl DashboardWindow {
         dashboard
     }
 
-    fn make_card(title: &str, accent_class: &str) -> (Label, Label, GtkBox) {
+    fn make_card(title: &str, accent_class: &str) -> (Label, Label, Label, GtkBox) {
         let card = GtkBox::new(Orientation::Horizontal, 0);
         card.add_css_class("countdown-card");
         card.add_css_class("card");
@@ -305,7 +341,7 @@ impl DashboardWindow {
         vbox.append(&state);
 
         card.append(&vbox);
-        (countdown, state, card)
+        (countdown, state, title_lbl, card)
     }
 
     pub fn show(&self) {

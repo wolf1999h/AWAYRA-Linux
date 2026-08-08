@@ -37,8 +37,9 @@ fn main() -> glib::ExitCode {
         });
     }
 
+    let loc = host.lock().unwrap().localization.clone();
     // Spawn system tray using ksni (D-Bus, GTK3-free)
-    let tray_service = ui::services::tray_service::TrayService::new(Some(tray_tx.clone()));
+    let tray_service = ui::services::tray_service::TrayService::new(Some(tray_tx.clone()), loc);
     let tray_status = tray_service.status();
     std::thread::spawn(move || {
         let handle = ksni::TrayService::new(tray_service).spawn();
