@@ -19,7 +19,7 @@ rodio = { version = "0.18", default-features = false, features = ["symphonia-all
 ksni = "0.2"
 x11rb = { version = "0.14", features = ["screensaver", "image"] }
 ashpd = { version = "0.13", features = ["screenshot"] }
-image = { version = "0.24", default-features = false, features = ["png", "jpeg"] }
+image = { version = "0.24", default-features = false, features = ["png", "jpeg", "webp", "bmp", "gif", "tiff"] }
 
 [profile.release]
 opt-level = 2

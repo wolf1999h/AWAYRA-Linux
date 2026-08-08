@@ -189,23 +189,20 @@ impl AppHost {
         Ok(())
     }
 
-    /// Copy a user-selected background image into the app data directory.
-    /// Returns the stable internal path, or None if the copy failed.
+    /// Load, validate, and convert a user-selected background image into a standard JPEG
+    /// stored safely in the app data directory. Returns the internal path, or None if invalid.
     pub fn store_custom_background(&self, source: &Path) -> Option<PathBuf> {
-        let ext = source
-            .extension()
-            .map(|e| e.to_string_lossy().to_lowercase())
-            .filter(|e| { let e = e.as_str(); matches!(e, "png"|"jpg"|"jpeg"|"webp"|"bmp"|"svg"|"gif"|"tif"|"tiff"|"avif") })
-            .unwrap_or_else(|| "png".to_string());
-
-        let dest = self.data_dir.join(format!("custom_background.{}", ext));
+        let dest = self.data_dir.join("custom_background.jpg");
         let res = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
-            std::fs::create_dir_all(&self.data_dir).ok();
-            std::fs::copy(source, &dest).ok()
+            std::fs::create_dir_all(&self.data_dir).ok()?;
+            let img = image::open(source).ok()?;
+            let mut file = std::fs::File::create(&dest).ok()?;
+            img.write_to(&mut file, image::ImageOutputFormat::Jpeg(85)).ok()?;
+            Some(dest.clone())
         }));
 
-        if let Ok(Some(_)) = res {
-            Some(dest)
+        if let Ok(Some(d)) = res {
+            Some(d)
         } else {
             None
         }

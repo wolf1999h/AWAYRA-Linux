@@ -320,30 +320,6 @@ impl OverlayWindow {
             } else {
                 Self::apply_clear_background(&self.bg_pictures);
             }
-
-            if settings.capture_screenshot {
-                // Capture and apply BEFORE the overlay window is shown, so the
-                // screenshot contains only the desktop (not the overlay itself)
-                // and the texture is ready for the first map with no flicker.
-                // Any failure (X11/Wayland/portal) falls back to the clear
-                // background instead of crashing the app.
-                let result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
-                    host_lock.screenshot_service.capture()
-                }))
-                .ok()
-                .flatten();
-                if let Some(r) = result {
-                    Self::apply_screenshot_background(
-                        &self.bg_pictures,
-                        &self.monitor_sizes,
-                        r,
-                    );
-                } else {
-                    Self::apply_clear_background(&self.bg_pictures);
-                }
-            } else {
-                Self::apply_clear_background(&self.bg_pictures);
-            }
         }
 
         self.countdown_label.set_text(&format!("{}", args.duration_seconds));
@@ -391,24 +367,60 @@ impl OverlayWindow {
         monitor_sizes: &[(i32, i32)],
         path: &std::path::Path,
     ) -> bool {
+        if !path.exists() || !path.is_file() {
+            eprintln!("[Awayra] Custom background file not found: {:?}", path);
+            return false;
+        }
+
+        eprintln!("[Awayra] Loading custom background image: {:?}", path);
+
+        // Load the image synchronously with GDK's built-in loader, scaled to
+        // the monitor size at decode time. This avoids the async race where
+        // set_file() would load after the window is mapped and never render.
+        let res = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+            gtk4::gdk_pixbuf::Pixbuf::from_file_at_scale(path, -1, -1, false)
+        }));
+
+        let orig_pixbuf = match res {
+            Ok(Ok(p)) => p,
+            Ok(Err(err)) => {
+                eprintln!("[Awayra] Failed to load custom background via pixbuf: {}", err);
+                // last resort: GTK's async set_file
+                let file = gtk4::gio::File::for_path(path);
+                for bg in bg_pictures {
+                    bg.set_file(Some(&file));
+                    bg.set_keep_aspect_ratio(false);
+                    bg.set_can_target(false);
+                    bg.queue_draw();
+                }
+                return true;
+            }
+            Err(_) => {
+                eprintln!("[Awayra] Panic loading custom background image");
+                return false;
+            }
+        };
+
         let mut loaded_any = false;
         for (i, bg) in bg_pictures.iter().enumerate() {
             let (mon_w, mon_h) = monitor_sizes.get(i).copied().unwrap_or((1920, 1080));
             let w = mon_w.max(1);
             let h = mon_h.max(1);
 
-            // Use GDK's native loader (PNG/JPEG/WebP/SVG/BMP/TIFF...) and scale
-            // directly to the monitor size while decoding. Wrapped in catch_unwind
-            // so a corrupt or oversized file can never abort the GTK main loop.
-            let res = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
-                gtk4::gdk_pixbuf::Pixbuf::from_file_at_scale(path, w, h, false)
-            }));
+            let scaled = match std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+                orig_pixbuf.scale_simple(w, h, gtk4::gdk_pixbuf::InterpType::Bilinear)
+            })) {
+                Ok(Some(p)) => p,
+                _ => orig_pixbuf.clone(),
+            };
 
-            if let Ok(Ok(pixbuf)) = res {
-                let texture = gtk4::gdk::Texture::for_pixbuf(&pixbuf);
-                bg.set_paintable(Some(&texture));
-                loaded_any = true;
-            }
+            let texture = gtk4::gdk::Texture::for_pixbuf(&scaled);
+            bg.set_file(None::<&gtk4::gio::File>);
+            bg.set_paintable(Some(&texture));
+            bg.set_keep_aspect_ratio(false);
+            bg.set_can_target(false);
+            bg.queue_draw();
+            loaded_any = true;
         }
         loaded_any
     }
@@ -450,19 +462,25 @@ impl OverlayWindow {
                     gtk4::gdk_pixbuf::InterpType::Bilinear,
                 ) {
                     let texture = gtk4::gdk::Texture::for_pixbuf(&scaled);
+                    bg.set_file(None::<&gtk4::gio::File>);
                     bg.set_paintable(Some(&texture));
+                    bg.queue_draw();
                     continue;
                 }
             }
 
             let texture = gtk4::gdk::Texture::for_pixbuf(&orig_pixbuf);
+            bg.set_file(None::<&gtk4::gio::File>);
             bg.set_paintable(Some(&texture));
+            bg.queue_draw();
         }
     }
 
     fn apply_clear_background(bg_pictures: &[Picture]) {
         for bg in bg_pictures {
+            bg.set_file(None::<&gtk4::gio::File>);
             bg.set_paintable(gtk4::gdk::Paintable::NONE);
+            bg.queue_draw();
         }
     }
 

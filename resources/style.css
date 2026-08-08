@@ -38,14 +38,14 @@ headerbar {
 /* Accent bars on cards */
 .card-accent-eye {
     background-color: #58C2F4;
-    width: 3px;
+    min-width: 3px;
     border-radius: 2px;
     margin-right: 12px;
 }
 
 .card-accent-move {
     background-color: #5DD4B4;
-    width: 3px;
+    min-width: 3px;
     border-radius: 2px;
     margin-right: 12px;
 }
@@ -66,7 +66,7 @@ headerbar {
     font-size: 40px;
     font-weight: 600;
     color: #F7F9FC;
-    font-features: "tnum";
+    font-variant-numeric: tabular-nums;
 }
 
 /* Buttons */
@@ -119,7 +119,7 @@ button.secondary-button:hover {
     border: 1px solid #364355;
     border-radius: 10px;
     padding: 16px;
-    text-align: left;
+    min-width: 240px;
 }
 
 .about-support-button:hover {
@@ -168,7 +168,6 @@ scale highlight {
     border-radius: 24px;
     padding: 36px;
     min-width: 420px;
-    max-width: 640px;
     box-shadow: 0 28px 40px rgba(0, 0, 0, 0.5);
 }
 
@@ -183,8 +182,6 @@ scale highlight {
     border-radius: 75px;
     min-width: 150px;
     min-height: 150px;
-    max-width: 150px;
-    max-height: 150px;
     margin-bottom: 12px;
 }
 
