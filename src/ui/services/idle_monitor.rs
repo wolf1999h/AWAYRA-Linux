@@ -93,16 +93,18 @@ impl IdleMonitor {
         // Try one immediate reconnect
         if let Ok((conn, screen_num)) = x11rb::connect(None) {
             let setup = conn.setup();
+            let mut ms_opt = None;
             if let Some(screen) = setup.roots.get(screen_num) {
                 if let Ok(cookie) = screensaver::query_info(&conn, screen.root) {
                     if let Ok(reply) = cookie.reply() {
-                        let ms = reply.ms_since_user_input;
-                        *guard = Some((conn, screen_num));
-                        return Ok((ms / 1000) as u64);
+                        ms_opt = Some(reply.ms_since_user_input);
                     }
                 }
             }
             *guard = Some((conn, screen_num));
+            if let Some(ms) = ms_opt {
+                return Ok((ms / 1000) as u64);
+            }
         }
 
         Err("X11 idle query failed".to_string())
