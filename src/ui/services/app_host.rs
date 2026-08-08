@@ -58,11 +58,8 @@ impl AppHost {
             .flatten()
             .unwrap_or_else(|| SchedulerState::create_default(chrono::Utc::now()));
 
-        // Load statistics
-        let stats_data = statistics_store.load()
-            .ok()
-            .flatten()
-            .unwrap_or_else(StatisticsData::create_default);
+        // Initialize statistics fresh on each app launch (starts at 0)
+        let stats_data = StatisticsData::create_default();
 
         let event_tx = event_tx.unwrap_or_else(|| {
             let (tx, _) = std::sync::mpsc::channel();
