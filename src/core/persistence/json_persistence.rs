@@ -43,7 +43,21 @@ impl<T: Serialize + DeserializeOwned> JsonStore<T> {
 
         let content = serde_json::to_string_pretty(value)
             .map_err(|e| format!("Failed to serialize: {}", e))?;
-        fs::write(&self.path, content).map_err(|e| format!("Failed to write {}: {}", self.path.display(), e))?;
+
+        let tmp_path = self.path.with_extension(format!(
+            "{}.tmp",
+            std::time::SystemTime::now()
+                .duration_since(std::time::UNIX_EPOCH)
+                .map(|d| d.as_nanos())
+                .unwrap_or(0)
+        ));
+
+        fs::write(&tmp_path, content).map_err(|e| format!("Failed to write {}: {}", tmp_path.display(), e))?;
+        fs::rename(&tmp_path, &self.path).map_err(|e| {
+            let _ = fs::remove_file(&tmp_path);
+            format!("Failed to rename {} to {}: {}", tmp_path.display(), self.path.display(), e)
+        })?;
+
         Ok(())
     }
 }

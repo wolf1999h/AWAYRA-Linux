@@ -110,7 +110,7 @@ fn play_theme_sound(theme: BreakSoundTheme, volume: f32) {
 }
 
 fn play_tone_sequence(notes: &[(f32, f32)], volume: f32) {
-    let Ok((_stream, stream_handle)) = OutputStream::try_default() else { return; };
+    let Ok((stream, stream_handle)) = OutputStream::try_default() else { return; };
     let Ok(sink) = Sink::try_new(&stream_handle) else { return; };
 
     sink.set_volume(volume);
@@ -119,4 +119,7 @@ fn play_tone_sequence(notes: &[(f32, f32)], volume: f32) {
         sink.append(source);
     }
     sink.sleep_until_end();
+    thread::sleep(Duration::from_millis(50));
+    drop(sink);
+    drop(stream);
 }

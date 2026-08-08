@@ -54,6 +54,10 @@ impl StatisticsData {
     }
 
     fn find_or_create_index(&mut self, today: NaiveDate) -> usize {
+        if let Some(cutoff) = today.checked_sub_signed(chrono::Duration::days(365)) {
+            self.days.retain(|d| d.date >= cutoff);
+        }
+
         if let Some(idx) = self.days.iter().position(|d| d.date == today) {
             return idx;
         }

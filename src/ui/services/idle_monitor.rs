@@ -1,7 +1,8 @@
 use std::sync::atomic::{AtomicBool, Ordering};
-use std::sync::Arc;
+use std::sync::{Arc, Mutex};
 use x11rb::connection::Connection;
 use x11rb::protocol::screensaver;
+use x11rb::rust_connection::RustConnection;
 
 /// IdleMonitor detects user idle time on Linux.
 /// On Wayland, it uses D-Bus (Mutter IdleMonitor / org.gnome.Mutter.IdleMonitor/Core GetIdletime,
@@ -10,6 +11,7 @@ use x11rb::protocol::screensaver;
 pub struct IdleMonitor {
     simulated_idle: Arc<AtomicBool>,
     simulation_active: Arc<AtomicBool>,
+    x11_conn: Arc<Mutex<Option<(RustConnection, usize)>>>,
 }
 
 impl IdleMonitor {
@@ -17,6 +19,7 @@ impl IdleMonitor {
         Self {
             simulated_idle: Arc::new(AtomicBool::new(false)),
             simulation_active: Arc::new(AtomicBool::new(false)),
+            x11_conn: Arc::new(Mutex::new(None)),
         }
     }
 
@@ -37,7 +40,7 @@ impl IdleMonitor {
         }
 
         // Fallback or primary X11 check
-        if let Ok(secs) = get_x11_idle_seconds() {
+        if let Ok(secs) = self.get_x11_idle_seconds() {
             return Ok(secs);
         }
 
@@ -61,6 +64,48 @@ impl IdleMonitor {
                 self.simulation_active.store(false, Ordering::Relaxed);
             }
         }
+    }
+
+    /// Query idle time on X11 via x11rb XScreenSaver QueryInfo, reusing connection
+    fn get_x11_idle_seconds(&self) -> Result<u64, String> {
+        let mut guard = self.x11_conn.lock().map_err(|e| e.to_string())?;
+
+        if guard.is_none() {
+            if let Ok((conn, screen_num)) = x11rb::connect(None) {
+                *guard = Some((conn, screen_num));
+            }
+        }
+
+        if let Some((ref conn, screen_num)) = *guard {
+            let setup = conn.setup();
+            if let Some(screen) = setup.roots.get(screen_num) {
+                if let Ok(cookie) = screensaver::query_info(conn, screen.root) {
+                    if let Ok(reply) = cookie.reply() {
+                        return Ok((reply.ms_since_user_input / 1000) as u64);
+                    }
+                }
+            }
+        }
+
+        // Reset connection on failure so next attempt tries reconnecting
+        *guard = None;
+
+        // Try one immediate reconnect
+        if let Ok((conn, screen_num)) = x11rb::connect(None) {
+            let setup = conn.setup();
+            if let Some(screen) = setup.roots.get(screen_num) {
+                if let Ok(cookie) = screensaver::query_info(&conn, screen.root) {
+                    if let Ok(reply) = cookie.reply() {
+                        let ms = reply.ms_since_user_input;
+                        *guard = Some((conn, screen_num));
+                        return Ok((ms / 1000) as u64);
+                    }
+                }
+            }
+            *guard = Some((conn, screen_num));
+        }
+
+        Err("X11 idle query failed".to_string())
     }
 }
 
@@ -108,20 +153,6 @@ fn get_wayland_idle_seconds() -> Result<u64, String> {
     }
 
     Err("Wayland idle monitor DBus query unavailable".to_string())
-}
-
-/// Query idle time on X11 via x11rb XScreenSaver QueryInfo
-fn get_x11_idle_seconds() -> Result<u64, String> {
-    let (conn, screen_num) = x11rb::connect(None).map_err(|e| e.to_string())?;
-    let screen = &conn.setup().roots[screen_num];
-
-    let reply = screensaver::query_info(&conn, screen.root)
-        .map_err(|e| e.to_string())?
-        .reply()
-        .map_err(|e| e.to_string())?;
-
-    let ms = reply.ms_since_user_input;
-    Ok((ms / 1000) as u64)
 }
 
 fn extract_digit_token(s: &str) -> Option<String> {

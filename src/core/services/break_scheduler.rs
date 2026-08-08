@@ -442,9 +442,11 @@ impl BreakScheduler {
         // In the C# version, it migrated from a single SnoozeUntil to per-break snooze.
     }
 
-    fn is_any_break_snoozed(&self, now: DateTime<Utc>) -> bool {
-        (self.state.eye_snooze_until.is_some() && now < self.state.eye_snooze_until.unwrap())
-            || (self.state.move_snooze_until.is_some() && now < self.state.move_snooze_until.unwrap())
+    fn is_break_snoozed(&self, break_type: BreakType, now: DateTime<Utc>) -> bool {
+        match break_type {
+            BreakType::Eye => self.state.eye_snooze_until.map_or(false, |until| now < until),
+            BreakType::Move => self.state.move_snooze_until.map_or(false, |until| now < until),
+        }
     }
 
     fn handle_clock_jump(&mut self, now: DateTime<Utc>) {
@@ -486,7 +488,7 @@ impl BreakScheduler {
         if self.state.active_break.is_some() {
             return SchedulerStatus::BreakActive;
         }
-        if self.is_any_break_snoozed(now) {
+        if self.is_break_snoozed(BreakType::Eye, now) || self.is_break_snoozed(BreakType::Move, now) {
             return SchedulerStatus::Snoozed;
         }
         if !self.settings.eye_reset_enabled && !self.settings.move_break_enabled {
@@ -583,15 +585,11 @@ impl BreakScheduler {
     }
 
     fn try_start_due_break(&mut self, now: DateTime<Utc>) {
-        if self.is_any_break_snoozed(now) {
-            return;
-        }
-
         let mut due_breaks: Vec<(BreakType, DateTime<Utc>)> = Vec::new();
-        if self.settings.eye_reset_enabled && now >= self.state.eye_next_due {
+        if self.settings.eye_reset_enabled && !self.is_break_snoozed(BreakType::Eye, now) && now >= self.state.eye_next_due {
             due_breaks.push((BreakType::Eye, self.state.eye_next_due));
         }
-        if self.settings.move_break_enabled && now >= self.state.move_next_due {
+        if self.settings.move_break_enabled && !self.is_break_snoozed(BreakType::Move, now) && now >= self.state.move_next_due {
             due_breaks.push((BreakType::Move, self.state.move_next_due));
         }
 
@@ -609,7 +607,7 @@ impl BreakScheduler {
     }
 
     fn try_start_queued_or_due(&mut self) {
-        if self.state.active_break.is_some() || self.is_any_break_snoozed(self.clock.now()) {
+        if self.state.active_break.is_some() {
             return;
         }
         if !self.can_deliver_reminders(self.clock.now()) {
