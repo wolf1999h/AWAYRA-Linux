@@ -1,5 +1,5 @@
 use std::sync::{Arc, Mutex};
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use directories::ProjectDirs;
 use tokio::time;
 
@@ -187,6 +187,28 @@ impl AppHost {
 
         log::info!("Settings saved");
         Ok(())
+    }
+
+    /// Copy a user-selected background image into the app data directory.
+    /// Returns the stable internal path, or None if the copy failed.
+    pub fn store_custom_background(&self, source: &Path) -> Option<PathBuf> {
+        let ext = source
+            .extension()
+            .map(|e| e.to_string_lossy().to_lowercase())
+            .filter(|e| { let e = e.as_str(); matches!(e, "png"|"jpg"|"jpeg"|"webp"|"bmp"|"svg"|"gif"|"tif"|"tiff"|"avif") })
+            .unwrap_or_else(|| "png".to_string());
+
+        let dest = self.data_dir.join(format!("custom_background.{}", ext));
+        let res = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+            std::fs::create_dir_all(&self.data_dir).ok();
+            std::fs::copy(source, &dest).ok()
+        }));
+
+        if let Ok(Some(_)) = res {
+            Some(dest)
+        } else {
+            None
+        }
     }
 
     pub fn persist_all(&self) -> Result<(), String> {

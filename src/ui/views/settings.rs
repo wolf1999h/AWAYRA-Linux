@@ -220,6 +220,7 @@ impl SettingsWindow {
         let browse_btn = Button::with_label("Browse...");
         browse_btn.add_css_class("secondary-button");
         let entry_clone = bg_entry.clone();
+        let host_for_browse = host.clone();
         browse_btn.connect_clicked(move |_| {
             let chooser = gtk4::FileChooserNative::new(
                 Some("Select Background Image"),
@@ -240,11 +241,20 @@ impl SettingsWindow {
             chooser.add_filter(&filter);
 
             let entry_target = entry_clone.clone();
+            let host_target = host_for_browse.clone();
             chooser.connect_response(move |dialog, response| {
                 if response == gtk4::ResponseType::Accept {
                     if let Some(file) = dialog.file() {
                         if let Some(path) = file.path() {
-                            entry_target.set_text(&path.to_string_lossy());
+                            // Automatically copy chosen background file into app's data directory
+                            let stored = if let Ok(h) = host_target.lock() {
+                                h.store_custom_background(&path)
+                            } else {
+                                None
+                            };
+
+                            let final_path = stored.unwrap_or(path);
+                            entry_target.set_text(&final_path.to_string_lossy());
                         }
                     }
                 }
@@ -304,7 +314,21 @@ impl SettingsWindow {
             let _ = crate::core::services::autostart_service::AutostartService::set_autostart(run_startup);
             let custom_bg_path = {
                 let text = bg_entry.text().trim().to_string();
-                if text.is_empty() { None } else { Some(text) }
+                if text.is_empty() {
+                    None
+                } else {
+                    let src_path = std::path::Path::new(&text);
+                    if src_path.exists() && src_path.is_file() {
+                        let stored = if let Ok(h) = host_for_save.lock() {
+                            h.store_custom_background(src_path)
+                        } else {
+                            None
+                        };
+                        stored.map(|p| p.to_string_lossy().to_string()).or(Some(text))
+                    } else {
+                        Some(text)
+                    }
+                }
             };
 
             let selected_theme = match sound_theme_dropdown.selected() {
