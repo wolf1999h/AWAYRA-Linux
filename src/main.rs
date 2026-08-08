@@ -7,6 +7,10 @@ use gtk4::glib;
 static RUNTIME: std::sync::OnceLock<tokio::runtime::Runtime> = std::sync::OnceLock::new();
 
 fn main() -> glib::ExitCode {
+    // Set application name for Window Manager & Dock matching
+    glib::set_prgname(Some("com.awayra.Awayra"));
+    glib::set_application_name("Awayra");
+
     // 1. Initialize logger
     env_logger::init();
 
@@ -62,6 +66,43 @@ fn main() -> glib::ExitCode {
         // Enable system-wide dark theme
         if let Some(gtk_settings) = gtk4::Settings::default() {
             gtk_settings.set_gtk_application_prefer_dark_theme(true);
+        }
+
+        // Install icon & desktop entry for Linux Dock recognition
+        if let Some(user_dirs) = directories::UserDirs::new() {
+            let icon_dir = user_dirs.home_dir().join(".local/share/icons/hicolor/512x512/apps");
+            let _ = std::fs::create_dir_all(&icon_dir);
+            let bytes = include_bytes!("../resources/icons/awayra.png");
+
+            // Save as both awayra.png and com.awayra.Awayra.png for binary & WMClass matching
+            let _ = std::fs::write(icon_dir.join("awayra.png"), bytes);
+            let _ = std::fs::write(icon_dir.join("com.awayra.Awayra.png"), bytes);
+
+            // Install .desktop file
+            let apps_dir = user_dirs.home_dir().join(".local/share/applications");
+            let _ = std::fs::create_dir_all(&apps_dir);
+            let desktop_file = apps_dir.join("com.awayra.Awayra.desktop");
+            if let Ok(exe_path) = std::env::current_exe() {
+                let desktop_entry = format!(
+                    "[Desktop Entry]\n\
+                    Type=Application\n\
+                    Name=Awayra\n\
+                    Comment=A calm break reminder\n\
+                    Exec={}\n\
+                    Icon=com.awayra.Awayra\n\
+                    StartupWMClass=com.awayra.Awayra\n\
+                    Terminal=false\n\
+                    Categories=Utility;\n",
+                    exe_path.display()
+                );
+                let _ = std::fs::write(desktop_file, desktop_entry);
+            }
+        }
+
+        // Add resources/icons to GTK Icon Theme
+        if let Some(display) = gtk4::gdk::Display::default() {
+            let icon_theme = gtk4::IconTheme::for_display(&display);
+            icon_theme.add_search_path("resources/icons");
         }
 
         // Load custom CSS from resources/style.css embedded directly into the binary

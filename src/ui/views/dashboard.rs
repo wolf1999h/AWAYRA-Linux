@@ -28,6 +28,7 @@ impl DashboardWindow {
         window.set_title(Some("Awayra"));
         window.set_default_size(460, 710);
         window.set_resizable(true);
+        window.set_icon_name(Some("com.awayra.Awayra"));
 
         let main_box = GtkBox::new(Orientation::Vertical, 0);
         main_box.set_margin_top(22);
@@ -36,20 +37,28 @@ impl DashboardWindow {
         main_box.set_margin_end(24);
 
         // Header Section
-        let header_box = GtkBox::new(Orientation::Vertical, 6);
-        header_box.set_margin_bottom(20);
+        let header_container = GtkBox::new(Orientation::Horizontal, 12);
+        header_container.set_margin_bottom(20);
+
+        // Icon
+        let icon = gtk4::Image::from_file("resources/icons/awayra.png");
+        icon.set_pixel_size(48); // Set a reasonable size for the header
+        header_container.append(&icon);
+
+        let header_text_box = GtkBox::new(Orientation::Vertical, 6);
 
         let title = Label::new(Some("Awayra"));
         title.add_css_class("title-label");
         title.set_halign(gtk4::Align::Start);
-        header_box.append(&title);
+        header_text_box.append(&title);
 
         let status_label = Label::new(Some("Starting..."));
         status_label.add_css_class("subtitle-label");
         status_label.set_halign(gtk4::Align::Start);
-        header_box.append(&status_label);
+        header_text_box.append(&status_label);
 
-        main_box.append(&header_box);
+        header_container.append(&header_text_box);
+        main_box.append(&header_container);
 
         // Countdown Cards Row (Eye Reset & Move Break)
         let cards_grid = Grid::new();
