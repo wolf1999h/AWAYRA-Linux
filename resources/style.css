@@ -148,6 +148,52 @@ button.secondary-button:hover {
     border-color: #73CEF7;
 }
 
+/* Window titlebar controls (minimize / maximize / close) — clear square hover bounds */
+windowcontrols button,
+headerbar button.titlebutton,
+headerbar windowcontrols button {
+    background: transparent;
+    border: none;
+    border-radius: 9999px;
+    padding: 4px;
+    margin: 0 2px;
+    min-width: 24px;
+    min-height: 24px;
+    box-shadow: none;
+    outline: none;
+    color: #F7F9FC;
+    transition: background-color 150ms ease-in-out;
+}
+
+windowcontrols button:hover,
+headerbar button.titlebutton:hover,
+headerbar windowcontrols button:hover {
+    background-color: rgba(255, 255, 255, 0.15);
+    border: none;
+    border-radius: 9999px;
+    box-shadow: none;
+}
+
+windowcontrols button:active,
+headerbar button.titlebutton:active,
+headerbar windowcontrols button:active {
+    background-color: rgba(255, 255, 255, 0.25);
+    border: none;
+    border-radius: 9999px;
+    box-shadow: none;
+}
+
+windowcontrols button image,
+windowcontrols button widget {
+    background: transparent;
+    box-shadow: none;
+    border: none;
+}
+
+windowcontrols button:disabled {
+    opacity: 0.5;
+}
+
 /* Dashboard Bottom About Card Button */
 .about-support-button {
     background-color: #181F28;
