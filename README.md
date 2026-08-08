@@ -6,7 +6,7 @@
 
   **A modern, high-performance, native Linux application designed to protect your eyes, prevent RSI, and cultivate healthy computer habits.**
 
-  [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+  [![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](LICENSE)
   [![Rust](https://img.shields.io/badge/Language-Rust-orange.svg)](https://www.rust-lang.org/)
   [![GTK4](https://img.shields.io/badge/GUI-GTK4-green.svg)](https://gtk.org/)
   [![Platform](https://img.shields.io/badge/Platform-Linux%20%28X11%20%26%20Wayland%20compatible%29-informational.svg)]()
@@ -124,4 +124,4 @@ Awayra for Linux was built to bring the beloved user experience of Awayra Window
 
 ## 📄 License
 
-This project is licensed under the [MIT License](LICENSE). Feel free to use, modify, and distribute it.
+This project is licensed under the [GNU General Public License v3.0 (GPL-3.0)](LICENSE). Feel free to use, modify, and distribute it in accordance with the license.
