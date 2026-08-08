@@ -30,3 +30,19 @@ impl Default for AppTheme {
         Self::Dark
     }
 }
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+pub enum BreakSoundTheme {
+    SoftBell = 0,
+    GentleChime = 1,
+    CalmDrop = 2,
+    CalmPiano = 3,
+    MorningDew = 4,
+    StillWater = 5,
+}
+
+impl Default for BreakSoundTheme {
+    fn default() -> Self {
+        Self::SoftBell
+    }
+}

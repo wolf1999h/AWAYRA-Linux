@@ -11,6 +11,9 @@ pub struct SchedulerState {
     pub eye_snooze_until: Option<DateTime<Utc>>,
     pub move_snooze_until: Option<DateTime<Utc>>,
     pub is_paused_manual: bool,
+    /// When a fixed-duration pause (or "until tomorrow") ends, auto-resume.
+    /// None while not paused or when paused indefinitely.
+    pub paused_until: Option<DateTime<Utc>>,
     pub active_break: Option<BreakType>,
     pub break_ends_at: Option<DateTime<Utc>>,
     pub queued_break: Option<BreakType>,
@@ -27,6 +30,7 @@ impl SchedulerState {
             eye_snooze_until: None,
             move_snooze_until: None,
             is_paused_manual: false,
+            paused_until: None,
             active_break: None,
             break_ends_at: None,
             queued_break: None,

@@ -1,5 +1,5 @@
 use gtk4::prelude::*;
-use gtk4::{ApplicationWindow, Label, Button, Grid, Orientation};
+use gtk4::{ApplicationWindow, Label, Button, Grid, Orientation, Box as GtkBox};
 use gtk4::glib::timeout_add_seconds_local;
 use std::sync::{Arc, Mutex};
 
@@ -26,62 +26,61 @@ impl DashboardWindow {
     pub fn new(app: &gtk4::Application, host: Arc<Mutex<AppHost>>) -> Self {
         let window = ApplicationWindow::new(app);
         window.set_title(Some("Awayra"));
-        window.set_default_size(460, 660);
+        window.set_default_size(460, 710);
+        window.set_resizable(true);
 
-        // CSS
-        let css = include_str!("../../../resources/style.css");
-        let provider = gtk4::CssProvider::new();
-        provider.load_from_data(css);
-        if let Some(display) = gtk4::gdk::Display::default() {
-            gtk4::style_context_add_provider_for_display(&display, &provider, gtk4::STYLE_PROVIDER_PRIORITY_APPLICATION);
-        }
-
-        let main_box = gtk4::Box::new(Orientation::Vertical, 12);
-        main_box.add_css_class("card");
+        let main_box = GtkBox::new(Orientation::Vertical, 0);
         main_box.set_margin_top(22);
         main_box.set_margin_bottom(20);
         main_box.set_margin_start(24);
         main_box.set_margin_end(24);
 
-        // Title
+        // Header Section
+        let header_box = GtkBox::new(Orientation::Vertical, 6);
+        header_box.set_margin_bottom(20);
+
         let title = Label::new(Some("Awayra"));
-        title.add_css_class("dashboard-title");
         title.add_css_class("title-label");
-        main_box.append(&title);
+        title.set_halign(gtk4::Align::Start);
+        header_box.append(&title);
 
-        // Status
         let status_label = Label::new(Some("Starting..."));
-        status_label.add_css_class("dashboard-status");
         status_label.add_css_class("subtitle-label");
-        main_box.append(&status_label);
+        status_label.set_halign(gtk4::Align::Start);
+        header_box.append(&status_label);
 
-        // Countdown cards
+        main_box.append(&header_box);
+
+        // Countdown Cards Row (Eye Reset & Move Break)
         let cards_grid = Grid::new();
         cards_grid.set_column_homogeneous(true);
-        cards_grid.set_column_spacing(6);
+        cards_grid.set_column_spacing(12);
+        cards_grid.set_margin_bottom(16);
 
-        let (eye_countdown, eye_state, eye_frame) = Self::make_card("Eye Reset");
-        eye_frame.add_css_class("card");
+        let (eye_countdown, eye_state, eye_frame) = Self::make_card("EYE RESET", "card-accent-eye");
         cards_grid.attach(&eye_frame, 0, 0, 1, 1);
 
-        let (move_countdown, move_state, move_frame) = Self::make_card("Move Break");
-        move_frame.add_css_class("card");
+        let (move_countdown, move_state, move_frame) = Self::make_card("MOVE BREAK", "card-accent-move");
         cards_grid.attach(&move_frame, 1, 0, 1, 1);
 
         main_box.append(&cards_grid);
 
-        // Today statistics
+        // Today Statistics Card
+        let stats_card = GtkBox::new(Orientation::Vertical, 0);
+        stats_card.add_css_class("card");
+        stats_card.set_margin_bottom(16);
+
         let stats_grid = Grid::new();
         stats_grid.set_column_homogeneous(true);
         stats_grid.set_row_homogeneous(true);
-        stats_grid.set_row_spacing(5);
-        stats_grid.set_column_spacing(5);
+        stats_grid.set_row_spacing(6);
+        stats_grid.set_column_spacing(6);
 
-        let today_eye = Label::new(Some("Eye: 0"));
+        let today_eye = Label::new(Some("Eye Reset: 0"));
         today_eye.add_css_class("stat-tile");
         stats_grid.attach(&today_eye, 0, 0, 1, 1);
 
-        let today_move = Label::new(Some("Move: 0"));
+        let today_move = Label::new(Some("Move Break: 0"));
         today_move.add_css_class("stat-tile");
         stats_grid.attach(&today_move, 1, 0, 1, 1);
 
@@ -93,59 +92,75 @@ impl DashboardWindow {
         today_snoozed.add_css_class("stat-tile");
         stats_grid.attach(&today_snoozed, 1, 1, 1, 1);
 
-        main_box.append(&stats_grid);
+        stats_card.append(&stats_grid);
+        main_box.append(&stats_card);
 
         // Spacer
-        let spacer = gtk4::Box::new(Orientation::Vertical, 0);
-        spacer.set_hexpand(true);
+        let spacer = GtkBox::new(Orientation::Vertical, 0);
         spacer.set_vexpand(true);
         main_box.append(&spacer);
 
-        // Action buttons
+        // Primary Action Buttons
         let action_grid = Grid::new();
         action_grid.set_column_homogeneous(true);
-        action_grid.set_column_spacing(6);
-        action_grid.set_margin_top(16);
+        action_grid.set_column_spacing(12);
         action_grid.set_margin_bottom(10);
 
         let eye_btn = Button::with_label("Eye Reset Now");
         eye_btn.add_css_class("primary-button");
-        eye_btn.add_css_class("primary-btn");
         action_grid.attach(&eye_btn, 0, 0, 1, 1);
 
         let move_btn = Button::with_label("Move Break Now");
         move_btn.add_css_class("primary-button");
-        move_btn.add_css_class("primary-btn");
         action_grid.attach(&move_btn, 1, 0, 1, 1);
 
         main_box.append(&action_grid);
 
-        // Secondary buttons
+        // Secondary Buttons
         let secondary_grid = Grid::new();
         secondary_grid.set_column_homogeneous(true);
-        secondary_grid.set_column_spacing(6);
+        secondary_grid.set_column_spacing(12);
+        secondary_grid.set_margin_bottom(12);
 
         let pause_btn = Button::with_label("Pause");
         pause_btn.add_css_class("secondary-button");
-        pause_btn.add_css_class("primary-btn");
         secondary_grid.attach(&pause_btn, 0, 0, 1, 1);
 
         let settings_btn = Button::with_label("Settings");
         settings_btn.add_css_class("secondary-button");
-        settings_btn.add_css_class("primary-btn");
         secondary_grid.attach(&settings_btn, 1, 0, 1, 1);
 
         main_box.append(&secondary_grid);
 
+        // About & Support Awayra Bottom Button
+        let about_card_btn = Button::new();
+        about_card_btn.add_css_class("about-support-button");
+
+        let about_vbox = GtkBox::new(Orientation::Vertical, 2);
+        let about_title = Label::new(Some("About & Support Awayra"));
+        about_title.add_css_class("about-support-title");
+        about_title.set_halign(gtk4::Align::Start);
+
+        let about_sub = Label::new(Some("Built with love for people who spend long hours at a computer."));
+        about_sub.add_css_class("about-support-sub");
+        about_sub.set_halign(gtk4::Align::Start);
+        about_sub.set_wrap(true);
+
+        about_vbox.append(&about_title);
+        about_vbox.append(&about_sub);
+        about_card_btn.set_child(Some(&about_vbox));
+
+        main_box.append(&about_card_btn);
+
         window.set_child(Some(&main_box));
 
-        // Prevent window from actually closing; hide to tray instead
+        // Prevent window close; hide to tray instead
         window.connect_close_request(|_window| {
             _window.hide();
             gtk4::glib::Propagation::Stop
         });
 
-        // Signals
+        // Click handlers
         let h = host.clone();
         eye_btn.connect_clicked(move |_| {
             if let Ok(host_ref) = h.lock() {
@@ -180,12 +195,15 @@ impl DashboardWindow {
 
         let h4 = host.clone();
         settings_btn.connect_clicked(move |_| {
-            if let Ok(host_ref) = h4.lock() {
-                let settings_win = crate::ui::views::settings::SettingsWindow::new(
-                    host_ref.clone(),
-                );
-                settings_win.show();
-            }
+            let settings_win = crate::ui::views::settings::SettingsWindow::new(
+                h4.clone(),
+            );
+            settings_win.show();
+        });
+
+        about_card_btn.connect_clicked(|_| {
+            let about_win = crate::ui::views::about::AboutWindow::new();
+            about_win.show();
         });
 
         let dashboard = Self {
@@ -204,7 +222,7 @@ impl DashboardWindow {
             settings_btn,
         };
 
-        // Start auto-refresh timer
+        // Refresh timer
         let host_ref = dashboard.host.clone();
         let status_lbl = dashboard.status_label.clone();
         let eye_cd = dashboard.eye_countdown.clone();
@@ -223,28 +241,23 @@ impl DashboardWindow {
                     let snapshot = sched.get_snapshot();
                     let loc = &host_lock.localization;
 
-                    // Status
-                    let status_text = loc.get_status(snapshot.status);
-                    status_lbl.set_text(&status_text);
+                    status_lbl.set_text(&loc.get_status(snapshot.status));
 
-                    // Eye countdown
                     let eye_secs = snapshot.eye_remaining.num_seconds().max(0);
                     eye_cd.set_text(&format!("{:02}:{:02}", eye_secs / 60, eye_secs % 60));
                     eye_st.set_text(if snapshot.eye_enabled { "Enabled" } else { "Disabled" });
 
-                    // Move countdown
                     let move_secs = snapshot.move_remaining.num_seconds().max(0);
                     move_cd.set_text(&format!("{:02}:{:02}", move_secs / 60, move_secs % 60));
                     move_st.set_text(if snapshot.move_enabled { "Enabled" } else { "Disabled" });
 
-                    // Pause button
                     pause.set_label(if snapshot.is_paused_manual { "Resume" } else { "Pause" });
                 }
 
                 if let Ok(stats) = host_lock.statistics.lock() {
                     let today = stats.get_today();
-                    t_eye.set_text(&format!("Eye: {}", today.eye_completed));
-                    t_move.set_text(&format!("Move: {}", today.move_completed));
+                    t_eye.set_text(&format!("Eye Reset: {}", today.eye_completed));
+                    t_move.set_text(&format!("Move Break: {}", today.move_completed));
                     t_skip.set_text(&format!("Skipped: {}", today.skipped));
                     t_snooze.set_text(&format!("Snoozed: {}", today.snoozed));
                 }
@@ -255,29 +268,35 @@ impl DashboardWindow {
         dashboard
     }
 
-    fn make_card(title: &str) -> (Label, Label, gtk4::Frame) {
-        let frame = gtk4::Frame::new(None);
-        frame.add_css_class("countdown-card");
-        frame.add_css_class("card");
-        let vbox = gtk4::Box::new(Orientation::Vertical, 4);
-        vbox.set_margin_top(12);
-        vbox.set_margin_bottom(12);
-        vbox.set_margin_start(12);
-        vbox.set_margin_end(12);
+    fn make_card(title: &str, accent_class: &str) -> (Label, Label, GtkBox) {
+        let card = GtkBox::new(Orientation::Horizontal, 0);
+        card.add_css_class("countdown-card");
+        card.add_css_class("card");
+
+        let accent_bar = GtkBox::new(Orientation::Vertical, 0);
+        accent_bar.add_css_class(accent_class);
+        card.append(&accent_bar);
+
+        let vbox = GtkBox::new(Orientation::Vertical, 4);
+        vbox.set_hexpand(true);
+
         let title_lbl = Label::new(Some(title));
         title_lbl.add_css_class("card-label");
-        title_lbl.add_css_class("title-label");
+        title_lbl.set_halign(gtk4::Align::Start);
         vbox.append(&title_lbl);
+
         let countdown = Label::new(Some("--:--"));
         countdown.add_css_class("countdown-value");
-        countdown.add_css_class("timer-display");
+        countdown.set_halign(gtk4::Align::Start);
         vbox.append(&countdown);
+
         let state = Label::new(Some(""));
         state.add_css_class("muted-text");
-        state.add_css_class("subtitle-label");
+        state.set_halign(gtk4::Align::Start);
         vbox.append(&state);
-        frame.set_child(Some(&vbox));
-        (countdown, state, frame)
+
+        card.append(&vbox);
+        (countdown, state, card)
     }
 
     pub fn show(&self) {

@@ -85,6 +85,10 @@ impl BreakScheduler {
         &self.state
     }
 
+    pub fn is_configuration_paused(&self) -> bool {
+        self.is_configuration_paused
+    }
+
     pub fn move_activity_index(&self) -> i32 {
         self.move_activity_index
     }
@@ -135,6 +139,16 @@ impl BreakScheduler {
         let now = self.clock.now();
         self.handle_clock_jump(now);
         self.state.last_clock_check = now;
+
+        // Auto-resume when a fixed-duration pause (or "until tomorrow") expires.
+        if self.state.is_paused_manual && !self.is_configuration_paused {
+            if let Some(until) = self.state.paused_until {
+                if now >= until {
+                    self.resume();
+                }
+            }
+        }
+
         self.update_work_hours_freeze(now);
 
         if self.state.active_break.is_some() {
@@ -151,33 +165,6 @@ impl BreakScheduler {
         }
 
         self.try_start_due_break(now);
-    }
-
-    pub fn update_settings(&mut self, settings: AppSettings) {
-        if !SettingsValidator::is_valid(&settings) {
-            return;
-        }
-
-        let now = self.clock.now();
-        let was_eye_enabled = self.settings.eye_reset_enabled;
-        let was_move_enabled = self.settings.move_break_enabled;
-        let old_eye_interval = self.settings.eye_reset_interval_minutes;
-        let old_move_interval = self.settings.move_break_interval_minutes;
-        self.settings = settings;
-
-        if !was_eye_enabled && self.settings.eye_reset_enabled {
-            self.state.eye_next_due = now + Duration::minutes(self.settings.eye_reset_interval_minutes as i64);
-            self.clear_eye_freeze_state();
-        } else if old_eye_interval != self.settings.eye_reset_interval_minutes || !self.settings.eye_reset_enabled {
-            self.reschedule_on_interval_change(BreakType::Eye, now, self.settings.eye_reset_interval_minutes, self.settings.eye_reset_enabled);
-        }
-
-        if !was_move_enabled && self.settings.move_break_enabled {
-            self.state.move_next_due = now + Duration::minutes(self.settings.move_break_interval_minutes as i64);
-            self.clear_move_freeze_state();
-        } else if old_move_interval != self.settings.move_break_interval_minutes || !self.settings.move_break_enabled {
-            self.reschedule_on_interval_change(BreakType::Move, now, self.settings.move_break_interval_minutes, self.settings.move_break_enabled);
-        }
     }
 
     pub fn enter_configuration_pause(&mut self) {
@@ -278,6 +265,52 @@ impl BreakScheduler {
         self.manual_frozen_eye_remaining = Some(self.get_raw_remaining(BreakType::Eye, now));
         self.manual_frozen_move_remaining = Some(self.get_raw_remaining(BreakType::Move, now));
         self.state.is_paused_manual = true;
+        self.state.paused_until = None;
+    }
+
+    /// Pause reminders for a fixed number of minutes (tray "Pause for 30 minutes",
+    /// "Pause for 1 hour"). Freezes the current remaining times so the schedule
+    /// resumes where it left off, and sets a single resume deadline.
+    pub fn pause_for_minutes(&mut self, minutes: i64) {
+        let now = self.clock.now();
+        if !self.state.is_paused_manual {
+            self.manual_frozen_eye_remaining = Some(self.get_raw_remaining(BreakType::Eye, now));
+            self.manual_frozen_move_remaining = Some(self.get_raw_remaining(BreakType::Move, now));
+        }
+        self.state.is_paused_manual = true;
+        let resume_at = now + Duration::minutes(minutes);
+        self.state.paused_until = Some(resume_at);
+    }
+
+    /// Pause reminders until tomorrow at the work start time (or 09:00 if work
+    /// hours are disabled). Matches the Windows tray "Pause until tomorrow".
+    pub fn pause_until_tomorrow(&mut self) {
+        let now = self.clock.now();
+        if !self.state.is_paused_manual {
+            self.manual_frozen_eye_remaining = Some(self.get_raw_remaining(BreakType::Eye, now));
+            self.manual_frozen_move_remaining = Some(self.get_raw_remaining(BreakType::Move, now));
+        }
+        self.state.is_paused_manual = true;
+
+        let local = now.with_timezone(&chrono::Local);
+        let next = local.date_naive().succ_opt().unwrap_or(local.date_naive());
+        let resume_hour = if self.settings.work_hours_enabled {
+            self.settings.work_start_hour
+        } else {
+            9
+        };
+        let resume_minute = if self.settings.work_hours_enabled {
+            self.settings.work_start_minute
+        } else {
+            0
+        };
+        let resume_local = next.and_hms_opt(resume_hour as u32, resume_minute as u32, 0)
+            .unwrap_or_else(|| next.and_hms_opt(9, 0, 0).unwrap());
+        let resume_at = resume_local.and_local_timezone(chrono::Local)
+            .single()
+            .map(|dt| dt.with_timezone(&Utc))
+            .unwrap_or_else(|| now + Duration::hours(9));
+        self.state.paused_until = Some(resume_at);
     }
 
     pub fn resume(&mut self) {
@@ -295,6 +328,7 @@ impl BreakScheduler {
         self.manual_frozen_eye_remaining = None;
         self.manual_frozen_move_remaining = None;
         self.state.is_paused_manual = false;
+        self.state.paused_until = None;
     }
 
     pub fn set_idle(&mut self, is_idle: bool) {
@@ -380,35 +414,25 @@ impl BreakScheduler {
         self.snooze_in_progress = false;
     }
 
-    pub fn restore_state(&mut self, state: SchedulerState) {
-        self.state = state;
-        self.normalize_state_on_load();
-    }
-
     // --- Private helpers ---
-
-    fn clear_eye_freeze_state(&mut self) {
-        self.manual_frozen_eye_remaining = None;
-        self.work_hours_frozen_eye_remaining = None;
-        self.config_frozen_eye_remaining = None;
-    }
-
-    fn clear_move_freeze_state(&mut self) {
-        self.manual_frozen_move_remaining = None;
-        self.work_hours_frozen_move_remaining = None;
-        self.config_frozen_move_remaining = None;
-    }
 
     fn normalize_state_on_load(&mut self) {
         let now = self.clock.now();
-        if self.state.eye_next_due == DateTime::<Utc>::default() {
+        if self.state.eye_next_due == DateTime::<Utc>::default() || self.state.eye_next_due <= now {
             self.state.eye_next_due = now + Duration::minutes(self.settings.eye_reset_interval_minutes as i64);
         }
-        if self.state.move_next_due == DateTime::<Utc>::default() {
+        if self.state.move_next_due == DateTime::<Utc>::default() || self.state.move_next_due <= now {
             self.state.move_next_due = now + Duration::minutes(self.settings.move_break_interval_minutes as i64);
         }
         if self.state.last_clock_check == DateTime::<Utc>::default() {
             self.state.last_clock_check = now;
+        }
+        // If the app was closed while a break was active, don't re-show the stale
+        // overlay on the next launch.
+        if self.state.active_break.is_some() || self.state.break_ends_at.is_some() {
+            self.state.active_break = None;
+            self.state.break_ends_at = None;
+            self.state.queued_break = None;
         }
         self.migrate_legacy_snooze_state();
     }
@@ -664,27 +688,6 @@ impl BreakScheduler {
                 self.state.move_next_due = from + Duration::minutes(interval as i64);
                 self.state.move_last_completed = Some(from);
             }
-        }
-    }
-
-    fn reschedule_on_interval_change(&mut self, break_type: BreakType, now: DateTime<Utc>, interval_minutes: i32, enabled: bool) {
-        if !enabled {
-            return;
-        }
-
-        let last_completed = match break_type {
-            BreakType::Eye => self.state.eye_last_completed,
-            BreakType::Move => self.state.move_last_completed,
-        };
-        let anchor = last_completed.unwrap_or(now);
-        let mut next = anchor + Duration::minutes(interval_minutes as i64);
-        if next < now {
-            next = now;
-        }
-
-        match break_type {
-            BreakType::Eye => self.state.eye_next_due = next,
-            BreakType::Move => self.state.move_next_due = next,
         }
     }
 

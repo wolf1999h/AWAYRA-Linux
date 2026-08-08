@@ -1,9 +1,9 @@
 use gtk4::prelude::*;
-use gtk4::{Window, Label, Button, Switch, SpinButton, ScrolledWindow, Orientation, Align};
+use gtk4::glib;
+use gtk4::{Window, Label, Button, Switch, SpinButton, Scale, DropDown, ScrolledWindow, Orientation, Align, StringList};
 use std::sync::{Arc, Mutex};
 
-use crate::core::models::AppSettings;
-use crate::core::services::break_scheduler::BreakScheduler;
+use crate::core::models::{AppSettings, AppTheme, BreakSoundTheme};
 use crate::ui::services::app_host::AppHost;
 
 pub struct SettingsWindow {
@@ -12,9 +12,14 @@ pub struct SettingsWindow {
 
 impl SettingsWindow {
     pub fn new(host: Arc<Mutex<AppHost>>) -> Self {
+        // Pause scheduler while configuration is open
+        if let Ok(host_ref) = host.lock() {
+            host_ref.enter_configuration_pause();
+        }
+
         let window = Window::new();
         window.set_title(Some("Awayra Settings"));
-        window.set_default_size(720, 600);
+        window.set_default_size(760, 680);
         window.set_resizable(true);
 
         let vbox = gtk4::Box::new(Orientation::Vertical, 12);
@@ -28,7 +33,7 @@ impl SettingsWindow {
         title.add_css_class("title-label");
         vbox.append(&title);
 
-        let subtitle = Label::new(Some("Configure reminder intervals, behavior, appearance, and system integration."));
+        let subtitle = Label::new(Some("Configure break intervals, sounds, appearance, idle detection, and system options."));
         subtitle.add_css_class("settings-subtitle");
         subtitle.add_css_class("subtitle-label");
         vbox.append(&subtitle);
@@ -43,34 +48,91 @@ impl SettingsWindow {
 
         let settings = host.lock().unwrap().settings.lock().unwrap().clone();
 
-        // Eye Reset section
+        // 1. Eye Reset section
         let eye_section = Self::create_section("Eye Reset");
         let eye_enabled = Switch::new();
         eye_enabled.set_active(settings.eye_reset_enabled);
-        Self::add_switch_row(&eye_section, "Enabled", &eye_enabled);
+        Self::add_switch_row(&eye_section, "Enable Eye Reset", &eye_enabled);
         let eye_interval = SpinButton::with_range(1.0, 480.0, 1.0);
         eye_interval.set_value(settings.eye_reset_interval_minutes as f64);
         Self::add_spin_row(&eye_section, "Interval", "minutes", &eye_interval);
         let eye_duration = SpinButton::with_range(5.0, 600.0, 1.0);
         eye_duration.set_value(settings.eye_reset_duration_seconds as f64);
         Self::add_spin_row(&eye_section, "Duration", "seconds", &eye_duration);
+        let eye_sound_enabled = Switch::new();
+        eye_sound_enabled.set_active(settings.eye_break_sound_enabled);
+        Self::add_switch_row(&eye_section, "Play sound on start", &eye_sound_enabled);
         content.append(&eye_section);
 
-        // Move Break section
+        // 2. Move Break section
         let move_section = Self::create_section("Move Break");
         let move_enabled = Switch::new();
         move_enabled.set_active(settings.move_break_enabled);
-        Self::add_switch_row(&move_section, "Enabled", &move_enabled);
+        Self::add_switch_row(&move_section, "Enable Move Break", &move_enabled);
         let move_interval = SpinButton::with_range(1.0, 480.0, 1.0);
         move_interval.set_value(settings.move_break_interval_minutes as f64);
         Self::add_spin_row(&move_section, "Interval", "minutes", &move_interval);
         let move_duration = SpinButton::with_range(5.0, 600.0, 1.0);
         move_duration.set_value(settings.move_break_duration_seconds as f64);
         Self::add_spin_row(&move_section, "Duration", "seconds", &move_duration);
+        let move_sound_enabled = Switch::new();
+        move_sound_enabled.set_active(settings.move_break_sound_enabled);
+        Self::add_switch_row(&move_section, "Play sound on start", &move_sound_enabled);
         content.append(&move_section);
 
-        // Behavior section
-        let behavior_section = Self::create_section("Reminder behavior");
+        // 3. Sound Configuration section
+        let sound_section = Self::create_section("Sound Theme & Audio");
+
+        let sound_themes = StringList::new(&[
+            "Soft Bell",
+            "Gentle Chime",
+            "Calm Drop",
+            "Calm Piano",
+            "Morning Dew",
+            "Still Water",
+        ]);
+        let sound_theme_dropdown = DropDown::new(Some(sound_themes), None::<&gtk4::Expression>);
+        sound_theme_dropdown.set_selected(match settings.break_sound_theme {
+            BreakSoundTheme::SoftBell => 0,
+            BreakSoundTheme::GentleChime => 1,
+            BreakSoundTheme::CalmDrop => 2,
+            BreakSoundTheme::CalmPiano => 3,
+            BreakSoundTheme::MorningDew => 4,
+            BreakSoundTheme::StillWater => 5,
+        });
+        Self::add_widget_row(&sound_section, "Sound Theme", &sound_theme_dropdown);
+
+        let sound_volume = SpinButton::with_range(0.0, 100.0, 5.0);
+        sound_volume.set_value(settings.break_sound_volume as f64);
+        Self::add_spin_row(&sound_section, "Volume", "%", &sound_volume);
+
+        let sound_repeat = SpinButton::with_range(0.0, 60.0, 1.0);
+        sound_repeat.set_value(settings.break_sound_repeat_seconds as f64);
+        Self::add_spin_row(&sound_section, "Repeat interval (0=off)", "seconds", &sound_repeat);
+
+        let preview_btn = Button::with_label("Preview Sound");
+        preview_btn.add_css_class("secondary-button");
+        let audio_service = host.lock().unwrap().audio_service.clone();
+        let theme_dropdown_clone = sound_theme_dropdown.clone();
+        let volume_spin_clone = sound_volume.clone();
+        preview_btn.connect_clicked(move |_| {
+            let selected = theme_dropdown_clone.selected();
+            let theme = match selected {
+                0 => BreakSoundTheme::SoftBell,
+                1 => BreakSoundTheme::GentleChime,
+                2 => BreakSoundTheme::CalmDrop,
+                3 => BreakSoundTheme::CalmPiano,
+                4 => BreakSoundTheme::MorningDew,
+                _ => BreakSoundTheme::StillWater,
+            };
+            let vol = volume_spin_clone.value() as i32;
+            audio_service.preview_sound(theme, vol);
+        });
+        Self::add_widget_row(&sound_section, "Test sound", &preview_btn);
+        content.append(&sound_section);
+
+        // 4. Behavior section
+        let behavior_section = Self::create_section("Reminder Behavior");
         let allow_skip = Switch::new();
         allow_skip.set_active(settings.allow_skip);
         Self::add_switch_row(&behavior_section, "Allow skip", &allow_skip);
@@ -82,29 +144,137 @@ impl SettingsWindow {
         Self::add_spin_row(&behavior_section, "Snooze duration", "minutes", &snooze_dur);
         content.append(&behavior_section);
 
-        // Idle & Work Hours section
-        let idle_section = Self::create_section("Idle and work hours");
+        // 5. Idle & Work Hours section
+        let idle_section = Self::create_section("Idle & Work Hours");
         let pause_idle = Switch::new();
         pause_idle.set_active(settings.pause_while_idle);
-        Self::add_switch_row(&idle_section, "Reset after idle", &pause_idle);
+        Self::add_switch_row(&idle_section, "Pause reminders when idle", &pause_idle);
         let idle_thresh = SpinButton::with_range(1.0, 120.0, 1.0);
         idle_thresh.set_value(settings.idle_threshold_minutes as f64);
         Self::add_spin_row(&idle_section, "Idle threshold", "minutes", &idle_thresh);
+
         let work_hours = Switch::new();
         work_hours.set_active(settings.work_hours_enabled);
-        Self::add_switch_row(&idle_section, "Enable work hours", &work_hours);
+        Self::add_switch_row(&idle_section, "Enable work hours filter", &work_hours);
+
+        let work_start_h = SpinButton::with_range(0.0, 23.0, 1.0);
+        work_start_h.set_value(settings.work_start_hour as f64);
+        let work_start_m = SpinButton::with_range(0.0, 59.0, 1.0);
+        work_start_m.set_value(settings.work_start_minute as f64);
+        Self::add_time_row(&idle_section, "Work start time", &work_start_h, &work_start_m);
+
+        let work_end_h = SpinButton::with_range(0.0, 23.0, 1.0);
+        work_end_h.set_value(settings.work_end_hour as f64);
+        let work_end_m = SpinButton::with_range(0.0, 59.0, 1.0);
+        work_end_m.set_value(settings.work_end_minute as f64);
+        Self::add_time_row(&idle_section, "Work end time", &work_end_h, &work_end_m);
         content.append(&idle_section);
 
-        // Screenshot section
-        let screenshot_section = Self::create_section("Overlay background");
+        // 6. Appearance & Overlay section
+        let appearance_section = Self::create_section("Appearance & Overlay Effect");
+
+        let glass_slider = Scale::with_range(Orientation::Horizontal, 0.0, 100.0, 1.0);
+        glass_slider.set_value(settings.glass_clarity as f64);
+        glass_slider.set_hexpand(true);
+        let clarity_val_label = Label::new(Some(&format!("{}%", settings.glass_clarity)));
+        clarity_val_label.set_size_request(45, -1);
+
+        let glass_row = gtk4::Box::new(Orientation::Horizontal, 8);
+        let glass_lbl = Label::new(Some("Glass Clarity"));
+        glass_lbl.set_size_request(160, -1);
+        glass_lbl.set_halign(Align::Start);
+        glass_row.append(&glass_lbl);
+        glass_row.append(&glass_slider);
+        glass_row.append(&clarity_val_label);
+        appearance_section.append(&glass_row);
+
+        let clarity_label_clone = clarity_val_label.clone();
+        glass_slider.connect_value_changed(move |scale| {
+            clarity_label_clone.set_text(&format!("{}%", scale.value() as i32));
+        });
+
+        let reduced_motion = Switch::new();
+        reduced_motion.set_active(settings.reduced_motion);
+        Self::add_switch_row(&appearance_section, "Reduced motion (disable animations)", &reduced_motion);
+
         let capture_switch = Switch::new();
         capture_switch.set_active(settings.capture_screenshot);
-        Self::add_switch_row(&screenshot_section, "Capture screenshot", &capture_switch);
-        let note = Label::new(Some("If disabled, a solid dark background will be shown during breaks.\nOn Wayland, enabling this will ask for permission via the portal."));
+        Self::add_switch_row(&appearance_section, "Transparent screenshot background", &capture_switch);
+
+        // Custom background image picker
+        let custom_bg_path: Option<String> = settings.custom_background_path.clone();
+        let bg_row = gtk4::Box::new(Orientation::Horizontal, 8);
+        let bg_lbl = Label::new(Some("Custom background image"));
+        bg_lbl.set_size_request(160, -1);
+        bg_lbl.set_halign(Align::Start);
+        bg_row.append(&bg_lbl);
+
+        let bg_entry = gtk4::Entry::new();
+        if let Some(p) = &custom_bg_path {
+            bg_entry.set_text(p);
+        }
+        bg_entry.set_hexpand(true);
+        bg_entry.set_placeholder_text(Some("Choose an image file..."));
+        bg_row.append(&bg_entry);
+
+        let browse_btn = Button::with_label("Browse...");
+        browse_btn.add_css_class("secondary-button");
+        let entry_clone = bg_entry.clone();
+        browse_btn.connect_clicked(move |_| {
+            let chooser = gtk4::FileChooserNative::new(
+                Some("Select Background Image"),
+                None::<&gtk4::Window>,
+                gtk4::FileChooserAction::Open,
+                Some("Select"),
+                Some("Cancel"),
+            );
+            let filter = gtk4::FileFilter::new();
+            filter.set_name(Some("Images"));
+            filter.add_mime_type("image/png");
+            filter.add_mime_type("image/jpeg");
+            filter.add_mime_type("image/webp");
+            filter.add_pattern("*.png");
+            filter.add_pattern("*.jpg");
+            filter.add_pattern("*.jpeg");
+            filter.add_pattern("*.webp");
+            chooser.add_filter(&filter);
+
+            let entry_target = entry_clone.clone();
+            chooser.connect_response(move |dialog, response| {
+                if response == gtk4::ResponseType::Accept {
+                    if let Some(file) = dialog.file() {
+                        if let Some(path) = file.path() {
+                            entry_target.set_text(&path.to_string_lossy());
+                        }
+                    }
+                }
+                dialog.destroy();
+            });
+            chooser.show();
+        });
+        bg_row.append(&browse_btn);
+        appearance_section.append(&bg_row);
+
+        let note = Label::new(Some("When desktop blur is active, your screen is captured under the break overlay.\nIf disabled or unavailable, a smooth dark gradient is used.\n\nOptionally pick a custom image to show behind the break overlay."));
         note.add_css_class("muted-text");
         note.set_wrap(true);
-        screenshot_section.append(&note);
-        content.append(&screenshot_section);
+        appearance_section.append(&note);
+        content.append(&appearance_section);
+
+        // 7. System Integration section
+        let system_section = Self::create_section("System & Startup");
+        let autostart_switch = Switch::new();
+        autostart_switch.set_active(crate::core::services::autostart_service::AutostartService::is_autostart_enabled());
+        Self::add_switch_row(&system_section, "Run at system startup", &autostart_switch);
+
+        let start_minimized = Switch::new();
+        start_minimized.set_active(settings.start_minimized);
+        Self::add_switch_row(&system_section, "Start minimized to system tray", &start_minimized);
+
+        let close_to_tray = Switch::new();
+        close_to_tray.set_active(settings.close_to_tray);
+        Self::add_switch_row(&system_section, "Close dashboard window to tray", &close_to_tray);
+        content.append(&system_section);
 
         scroll.set_child(Some(&content));
         vbox.append(&scroll);
@@ -114,22 +284,38 @@ impl SettingsWindow {
         action_bar.set_halign(Align::End);
         action_bar.set_margin_top(8);
 
-        let save_btn = Button::with_label("Save");
+        let save_btn = Button::with_label("Save Changes");
         save_btn.add_css_class("primary-button");
         save_btn.add_css_class("primary-btn");
         action_bar.append(&save_btn);
 
-        let close_btn = Button::with_label("Close");
-        close_btn.add_css_class("secondary-button");
-        close_btn.add_css_class("secondary-button");
-        action_bar.append(&close_btn);
+        let cancel_btn = Button::with_label("Cancel");
+        cancel_btn.add_css_class("secondary-button");
+        action_bar.append(&cancel_btn);
 
         vbox.append(&action_bar);
         window.set_child(Some(&vbox));
 
-        // Save signal - persist to disk and update scheduler
+        // Save signal - persist settings and resume scheduler
         let host_for_save = host.clone();
+        let win_for_save = window.clone();
         save_btn.connect_clicked(move |_| {
+            let run_startup = autostart_switch.is_active();
+            let _ = crate::core::services::autostart_service::AutostartService::set_autostart(run_startup);
+            let custom_bg_path = {
+                let text = bg_entry.text().trim().to_string();
+                if text.is_empty() { None } else { Some(text) }
+            };
+
+            let selected_theme = match sound_theme_dropdown.selected() {
+                0 => BreakSoundTheme::SoftBell,
+                1 => BreakSoundTheme::GentleChime,
+                2 => BreakSoundTheme::CalmDrop,
+                3 => BreakSoundTheme::CalmPiano,
+                4 => BreakSoundTheme::MorningDew,
+                _ => BreakSoundTheme::StillWater,
+            };
+
             let new_settings = AppSettings {
                 schema_version: crate::core::models::CURRENT_SCHEMA_VERSION,
                 eye_reset_enabled: eye_enabled.is_active(),
@@ -144,31 +330,51 @@ impl SettingsWindow {
                 pause_while_idle: pause_idle.is_active(),
                 idle_threshold_minutes: idle_thresh.value() as i32,
                 work_hours_enabled: work_hours.is_active(),
-                work_start_hour: 9,
-                work_start_minute: 0,
-                work_end_hour: 18,
-                work_end_minute: 0,
-                run_at_startup: false,
-                start_minimized: false,
-                close_to_tray: true,
-                glass_clarity: 75,
-                reduced_motion: false,
-                theme: crate::core::models::AppTheme::Dark,
+                work_start_hour: work_start_h.value() as i32,
+                work_start_minute: work_start_m.value() as i32,
+                work_end_hour: work_end_h.value() as i32,
+                work_end_minute: work_end_m.value() as i32,
+                run_at_startup: run_startup,
+                start_minimized: start_minimized.is_active(),
+                close_to_tray: close_to_tray.is_active(),
+                glass_clarity: glass_slider.value() as i32,
+                reduced_motion: reduced_motion.is_active(),
+                theme: AppTheme::Dark,
+                eye_break_sound_enabled: eye_sound_enabled.is_active(),
+                move_break_sound_enabled: move_sound_enabled.is_active(),
+                break_sound_theme: selected_theme,
+                break_sound_volume: sound_volume.value() as i32,
+                break_sound_repeat_seconds: sound_repeat.value() as i32,
+                break_animation_enabled: !reduced_motion.is_active(),
                 capture_screenshot: capture_switch.is_active(),
+                custom_background_path: custom_bg_path,
             };
 
-            // Use host's save_configuration which handles persistence and scheduler update
             if let Ok(host_ref) = host_for_save.lock() {
-                let rt = tokio::runtime::Runtime::new().expect("Failed to create Tokio runtime");
-                rt.block_on(async move {
-                    let _ = host_ref.save_configuration(new_settings).await;
-                });
+                let _ = host_ref.save_configuration(new_settings);
+                host_ref.exit_configuration_pause();
             }
+            win_for_save.close();
         });
 
-        // Close signal
-        let w = window.clone();
-        close_btn.connect_clicked(move |_| w.close());
+        // Cancel signal
+        let host_for_cancel = host.clone();
+        let win_for_cancel = window.clone();
+        cancel_btn.connect_clicked(move |_| {
+            if let Ok(host_ref) = host_for_cancel.lock() {
+                host_ref.exit_configuration_pause();
+            }
+            win_for_cancel.close();
+        });
+
+        // Window close-request signal (captures X button click)
+        let host_for_close = host.clone();
+        window.connect_close_request(move |_| {
+            if let Ok(host_ref) = host_for_close.lock() {
+                host_ref.exit_configuration_pause();
+            }
+            glib::Propagation::Proceed
+        });
 
         Self { window }
     }
@@ -183,6 +389,7 @@ impl SettingsWindow {
 
         let section_title = Label::new(Some(title));
         section_title.add_css_class("section-title");
+        section_title.set_halign(Align::Start);
         section.append(&section_title);
 
         section
@@ -201,11 +408,35 @@ impl SettingsWindow {
     fn add_spin_row(parent: &gtk4::Box, label: &str, unit: &str, spin: &SpinButton) {
         let row = gtk4::Box::new(Orientation::Horizontal, 8);
         let lbl = Label::new(Some(label));
-        lbl.set_size_request(130, -1);
+        lbl.set_size_request(160, -1);
+        lbl.set_halign(Align::Start);
         row.append(&lbl);
         row.append(spin);
         let unit_lbl = Label::new(Some(unit));
         row.append(&unit_lbl);
+        parent.append(&row);
+    }
+
+    fn add_widget_row(parent: &gtk4::Box, label: &str, widget: &impl IsA<gtk4::Widget>) {
+        let row = gtk4::Box::new(Orientation::Horizontal, 8);
+        let lbl = Label::new(Some(label));
+        lbl.set_size_request(160, -1);
+        lbl.set_halign(Align::Start);
+        row.append(&lbl);
+        row.append(widget);
+        parent.append(&row);
+    }
+
+    fn add_time_row(parent: &gtk4::Box, label: &str, spin_h: &SpinButton, spin_m: &SpinButton) {
+        let row = gtk4::Box::new(Orientation::Horizontal, 8);
+        let lbl = Label::new(Some(label));
+        lbl.set_size_request(160, -1);
+        lbl.set_halign(Align::Start);
+        row.append(&lbl);
+        row.append(spin_h);
+        row.append(&Label::new(Some("h")));
+        row.append(spin_m);
+        row.append(&Label::new(Some("m")));
         parent.append(&row);
     }
 

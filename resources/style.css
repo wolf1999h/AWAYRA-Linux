@@ -1,357 +1,310 @@
-/* Awayra Modern Dark Palette - Catppuccin Mocha inspired */
+/* Awayra Windows WPF Match Palette */
+
+/* Palette Colors */
+/*
+  Background: #0E1319
+  Card: #181F28
+  CardElevated: #202833
+  Border: #364355
+  PrimaryText: #F7F9FC
+  SecondaryText: #D0D8E4
+  MutedText: #9EABBC
+  Accent/Eye: #58C2F4
+  MoveAccent: #5DD4B4
+  OverlayCard: #EE18202A
+*/
 
 /* Global */
 window, window.background, window.dialog {
-    background-color: #181825;
-    color: #cdd6f4;
-    font-family: 'Inter', 'Ubuntu', 'Cantarell', sans-serif;
+    background-color: #0E1319;
+    color: #F7F9FC;
+    font-family: 'Segoe UI Variable', 'Segoe UI', 'Ubuntu', 'Inter', sans-serif;
 }
 
 headerbar {
-    background-color: #181825;
-    color: #cdd6f4;
-    border-bottom: 1px solid #313244;
+    background-color: #0E1319;
+    color: #F7F9FC;
+    border-bottom: 1px solid #364355;
 }
 
 /* Cards & Containers */
 .card {
-    background-color: #1e1e2e;
-    border: 1px solid #313244;
+    background-color: #181F28;
+    border: 1px solid #364355;
     border-radius: 12px;
-    padding: 16px;
-    margin: 8px;
+    padding: 14px;
 }
 
-.card:hover {
-    border-color: #89b4fa;
+/* Accent bars on cards */
+.card-accent-eye {
+    background-color: #58C2F4;
+    width: 3px;
+    border-radius: 2px;
+    margin-right: 12px;
+}
+
+.card-accent-move {
+    background-color: #5DD4B4;
+    width: 3px;
+    border-radius: 2px;
+    margin-right: 12px;
 }
 
 /* Typography */
 .title-label {
-    font-size: 20px;
-    font-weight: bold;
-    color: #cdd6f4;
+    font-size: 30px;
+    font-weight: 600;
+    color: #F7F9FC;
 }
 
 .subtitle-label {
-    font-size: 13px;
-    color: #a6adc8;
+    font-size: 14px;
+    color: #D0D8E4;
 }
 
 .timer-display {
-    font-size: 48px;
-    font-weight: 800;
-    color: #89b4fa;
+    font-size: 40px;
+    font-weight: 600;
+    color: #F7F9FC;
     font-features: "tnum";
 }
 
 /* Buttons */
 button {
-    background-color: #313244;
-    color: #cdd6f4;
-    border: 1px solid #313244;
-    border-radius: 8px;
-    padding: 8px 16px;
+    background-color: #202833;
+    color: #F7F9FC;
+    border: 1px solid #364355;
+    border-radius: 10px;
+    padding: 10px 16px;
+    font-size: 13px;
     font-weight: 600;
     transition: all 150ms ease-in-out;
 }
 
 button:hover {
-    background-color: #45475a;
-    border-color: #89b4fa;
+    background-color: #364355;
+    border-color: #73CEF7;
 }
 
-button.primary-btn {
-    background-color: #89b4fa;
-    color: #11111b;
-    border: none;
+button.primary-btn, button.primary-button {
+    background-color: #58C2F4;
+    color: #07141C;
+    border: 1px solid #58C2F4;
+    font-weight: 600;
+    font-size: 13px;
+    border-radius: 10px;
 }
 
-button.primary-btn:hover {
-    background-color: #b4befe;
+button.primary-btn:hover, button.primary-button:hover {
+    background-color: #73CEF7;
+    border-color: #73CEF7;
 }
 
-button.danger-btn {
-    background-color: #f38ba8;
-    color: #11111b;
-    border: none;
+button.secondary-button {
+    background-color: #202833;
+    color: #F7F9FC;
+    border: 1px solid #364355;
+    border-radius: 10px;
+}
+
+button.secondary-button:hover {
+    background-color: #364355;
+    border-color: #73CEF7;
+}
+
+/* Dashboard Bottom About Card Button */
+.about-support-button {
+    background-color: #181F28;
+    color: #F7F9FC;
+    border: 1px solid #364355;
+    border-radius: 10px;
+    padding: 16px;
+    text-align: left;
+}
+
+.about-support-button:hover {
+    background-color: #202833;
+    border-color: #73CEF7;
+}
+
+.about-support-title {
+    font-size: 13px;
+    font-weight: 600;
+    color: #F7F9FC;
+}
+
+.about-support-sub {
+    font-size: 12px;
+    color: #9EABBC;
+    margin-top: 4px;
 }
 
 /* Progress Bars & Sliders */
 progressbar trough {
-    background-color: #313244;
-    border-radius: 6px;
+    background-color: #364355;
+    border-radius: 8px;
     min-height: 8px;
 }
 
 progressbar progress {
-    background-color: #89b4fa;
-    border-radius: 6px;
+    background-color: #58C2F4;
+    border-radius: 8px;
 }
 
 scale trough {
-    background-color: #313244;
-    border-radius: 4px;
+    background-color: #364355;
+    border-radius: 6px;
 }
 
 scale highlight {
-    background-color: #89b4fa;
-    border-radius: 4px;
+    background-color: #58C2F4;
+    border-radius: 6px;
 }
 
-/* Overlay Glass Effect */
-.glass-overlay {
-    background-color: rgba(24, 24, 37, 0.88);
-    backdrop-filter: blur(20px);
-}
-
-/* Dashboard Styles */
-.dashboard-title {
-    font-size: 24px;
-    font-weight: 700;
-    color: #cdd6f4;
-    margin-bottom: 4px;
-}
-
-.dashboard-status {
-    font-size: 14px;
-    color: #a6adc8;
-    margin-bottom: 16px;
-}
-
-/* Countdown cards */
-.countdown-card {
-    background-color: #1e1e2e;
-    border: 1px solid #313244;
-    border-radius: 14px;
-    padding: 0;
-    min-height: 100px;
-}
-
-.countdown-card label {
-    color: #cdd6f4;
-}
-
-.card-label {
-    font-size: 12px;
-    font-weight: 600;
-    color: #a6adc8;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-}
-
-.countdown-value {
-    font-size: 28px;
-    font-weight: 700;
-    color: #cdd6f4;
-    font-variant-numeric: tabular-nums;
-}
-
-.muted-text {
-    font-size: 11px;
-    color: #a6adc8;
-}
-
-/* Statistics tiles */
-.stat-tile {
-    background-color: #1e1e2e;
-    border: 1px solid #313244;
-    border-radius: 10px;
-    padding: 12px;
-    font-size: 13px;
-    font-weight: 600;
-    color: #cdd6f4;
-    min-height: 40px;
-}
-
-/* Action buttons */
-.primary-button {
-    background-color: #89b4fa;
-    color: #11111b;
-    border: none;
-    border-radius: 10px;
-    padding: 10px 16px;
-    font-weight: 600;
-    font-size: 14px;
-    min-height: 40px;
-}
-
-.primary-button:hover {
-    background-color: #b4befe;
-}
-
-.primary-button:active {
-    background-color: #74c7ec;
-}
-
-.secondary-button {
-    background-color: #1e1e2e;
-    color: #cdd6f4;
-    border: 1px solid #313244;
-    border-radius: 10px;
-    padding: 10px 16px;
-    font-weight: 600;
-    font-size: 14px;
-    min-height: 40px;
-}
-
-.secondary-button:hover {
-    background-color: #45475a;
-    border-color: #89b4fa;
-}
-
-/* Overlay Styles */
-.overlay-bg {
-    background-color: #181825;
+/* Overlay Window Styling */
+.overlay-card {
+    background-color: #18202A;
+    border: 1px solid #465566;
+    border-radius: 24px;
+    padding: 36px;
+    min-width: 420px;
+    max-width: 640px;
+    box-shadow: 0 28px 40px rgba(0, 0, 0, 0.5);
 }
 
 .overlay-title {
-    font-size: 28px;
-    font-weight: 700;
-    color: #cdd6f4;
+    font-size: 30px;
+    font-weight: 600;
+    color: #F7F9FC;
 }
 
-.overlay-countdown {
-    font-size: 72px;
-    font-weight: 700;
-    color: #89b4fa;
+.timer-ring-box {
+    border: 4px solid #3A4554;
+    border-radius: 75px;
+    min-width: 150px;
+    min-height: 150px;
+    max-width: 150px;
+    max-height: 150px;
+    margin-bottom: 12px;
+}
+
+.timer-ring-text {
+    font-size: 44px;
+    font-weight: 600;
+    color: #FFFFFF;
     font-variant-numeric: tabular-nums;
 }
 
-.overlay-instruction {
-    font-size: 18px;
-    color: #cdd6f4;
+.overlay-instruction-primary {
+    font-size: 16px;
+    color: #F3F6FA;
 }
 
 .overlay-instruction-secondary {
     font-size: 14px;
-    color: #a6adc8;
+    color: #D3DAE5;
 }
 
-.overlay-btn {
-    background-color: #1e1e2e;
-    color: #cdd6f4;
-    border: 1px solid #313244;
-    border-radius: 10px;
-    padding: 10px 20px;
+/* Countdown cards in Dashboard */
+.countdown-card {
+    background-color: #181F28;
+    border: 1px solid #364355;
+    border-radius: 12px;
+    padding: 14px;
+}
+
+.card-label {
+    font-size: 13px;
     font-weight: 600;
-    min-width: 100px;
+    color: #D0D8E4;
 }
 
-.overlay-btn:hover {
-    background-color: #45475a;
-    border-color: #89b4fa;
-}
-
-.overlay-btn-primary {
-    background-color: #89b4fa;
-    color: #11111b;
-    border: none;
-    border-radius: 10px;
-    padding: 10px 20px;
+.countdown-value {
+    font-size: 40px;
     font-weight: 600;
-    min-width: 100px;
+    color: #F7F9FC;
+    font-variant-numeric: tabular-nums;
 }
 
-.overlay-btn-primary:hover {
-    background-color: #b4befe;
+.muted-text {
+    font-size: 12px;
+    color: #9EABBC;
+}
+
+/* Statistics tiles */
+.stat-tile {
+    background-color: #202833;
+    border: 1px solid #364355;
+    border-radius: 8px;
+    padding: 10px 12px;
+    font-size: 13px;
+    color: #D0D8E4;
+    min-height: 52px;
 }
 
 /* Settings Styles */
 .settings-title {
     font-size: 22px;
-    font-weight: 700;
-    color: #cdd6f4;
+    font-weight: 600;
+    color: #F7F9FC;
 }
 
 .settings-subtitle {
     font-size: 13px;
-    color: #a6adc8;
+    color: #D0D8E4;
 }
 
 .settings-section {
-    background-color: #1e1e2e;
-    border: 1px solid #313244;
+    background-color: #181F28;
+    border: 1px solid #364355;
     border-radius: 14px;
     padding: 16px;
 }
 
-/* All text inside settings sections must be light */
 .settings-section label {
-    color: #cdd6f4;
+    color: #F7F9FC;
 }
 
 .settings-section .section-title {
-    color: #89b4fa;
-}
-
-.settings-section .muted-text {
-    color: #a6adc8;
-}
-
-.section-title {
+    color: #58C2F4;
     font-size: 16px;
     font-weight: 600;
-    color: #89b4fa;
-    margin-bottom: 8px;
 }
 
-.validation-label {
-    font-size: 12px;
-    color: #f38ba8;
-    min-height: 20px;
-}
-
-/* Switch and spinbutton styling */
-switch {
-    font-size: 13px;
-}
-
-switch label {
-    color: #cdd6f4;
-}
-
-spinbutton {
-    background-color: #1e1e2e;
-    color: #cdd6f4;
-    border: 1px solid #313244;
+spinbutton, entry {
+    background-color: #202833;
+    color: #F7F9FC;
+    border: 1px solid #364355;
     border-radius: 6px;
-    padding: 4px 8px;
-    min-width: 80px;
+    padding: 6px 10px;
 }
 
-spinbutton:focus {
-    border-color: #89b4fa;
+spinbutton:focus, entry:focus {
+    border-color: #73CEF7;
 }
 
-entry {
-    background-color: #1e1e2e;
-    color: #cdd6f4;
-    border: 1px solid #313244;
-    border-radius: 6px;
-    padding: 4px 8px;
+/* Separator line */
+separator {
+    background-color: #364355;
+    min-height: 1px;
 }
 
-entry:focus {
-    border-color: #89b4fa;
+/* Added overlay missing CSS classes */
+.glass-overlay {
+    background-color: rgba(24, 32, 42, 0.85);
+    border: 1px solid #364355;
+    border-radius: 16px;
+    padding: 24px;
 }
 
-/* Scrollbar styling */
-scrollbar {
-    background-color: #181825;
+.overlay-bg {
+    background-color: #0E1319;
 }
 
-scrollbar trough {
-    background-color: #181825;
+.dashboard-title {
+    font-size: 48px;
 }
-
-scrollbar slider {
-    background-color: #313244;
-    border-radius: 8px;
-    min-width: 8px;
-    min-height: 8px;
-}
-
-scrollbar slider:hover {
-    background-color: #89b4fa;
+.overlay-instruction {
+    font-size: 15px;
+    color: #F3F6FA;
 }

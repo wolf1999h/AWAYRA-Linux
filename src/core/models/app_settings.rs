@@ -43,9 +43,21 @@ pub struct AppSettings {
     pub reduced_motion: bool,
     pub theme: AppTheme,
 
+    /// Sound configuration
+    pub eye_break_sound_enabled: bool,
+    pub move_break_sound_enabled: bool,
+    pub break_sound_theme: crate::core::models::BreakSoundTheme,
+    pub break_sound_volume: i32, // 0..100, default 15
+    pub break_sound_repeat_seconds: i32, // 0 to disable repeat, default 2
+    pub break_animation_enabled: bool,
+
     /// Whether to capture a screenshot for the overlay background.
     /// If false, uses a solid dark/plain background instead.
     pub capture_screenshot: bool,
+
+    /// Optional custom background image file path.
+    /// If set and file exists, will be displayed behind the break overlay.
+    pub custom_background_path: Option<String>,
 }
 
 impl Default for AppSettings {
@@ -82,7 +94,15 @@ impl Default for AppSettings {
             reduced_motion: false,
             theme: AppTheme::Dark,
 
-            capture_screenshot: true,
+            eye_break_sound_enabled: true,
+            move_break_sound_enabled: true,
+            break_sound_theme: crate::core::models::BreakSoundTheme::SoftBell,
+            break_sound_volume: 15,
+            break_sound_repeat_seconds: 2,
+            break_animation_enabled: true,
+
+            capture_screenshot: false,
+            custom_background_path: None,
         }
     }
 }

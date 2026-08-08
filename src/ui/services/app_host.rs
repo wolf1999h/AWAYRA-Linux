@@ -17,6 +17,7 @@ pub struct AppHost {
     pub statistics: Arc<Mutex<StatisticsService>>,
     pub settings: Arc<Mutex<AppSettings>>,
     pub localization: Arc<LocalizationService>,
+    pub audio_service: Arc<crate::core::services::audio_service::AudioService>,
     pub idle_monitor: Arc<IdleMonitor>,
     pub screenshot_service: Arc<ScreenshotService>,
 
@@ -82,6 +83,7 @@ impl AppHost {
         ));
 
         let localization = std::sync::Arc::new(LocalizationService::new());
+        let audio_service = std::sync::Arc::new(crate::core::services::audio_service::AudioService::new());
         let idle_monitor = std::sync::Arc::new(IdleMonitor::new());
         let screenshot_service = std::sync::Arc::new(ScreenshotService::new());
 
@@ -90,6 +92,7 @@ impl AppHost {
             statistics,
             settings: Arc::new(Mutex::new(settings)),
             localization,
+            audio_service,
             idle_monitor,
             screenshot_service,
             settings_store,
@@ -149,28 +152,25 @@ impl AppHost {
         log::info!("Awayra initialized. Data directory: {}", self.data_dir.display());
     }
 
-    pub fn begin_configuration_session(&self) {
+    pub fn enter_configuration_pause(&self) {
         if let Ok(mut sched) = self.scheduler.lock() {
             sched.enter_configuration_pause();
         }
     }
 
-    pub fn end_configuration_session(&self, saved: bool) {
+    pub fn exit_configuration_pause(&self) {
         if let Ok(mut sched) = self.scheduler.lock() {
-            if !saved {
-                sched.cancel_configuration_pause();
-            }
+            sched.cancel_configuration_pause();
         }
     }
 
-    pub async fn save_configuration(&self, new_settings: AppSettings) -> Result<(), String> {
+    pub fn save_configuration(&self, new_settings: AppSettings) -> Result<(), String> {
         if !SettingsValidator::is_valid(&new_settings) {
             return Err("Invalid settings".to_string());
         }
 
         let save_time = chrono::Utc::now();
         let mut old_settings = self.settings.lock().map_err(|e| e.to_string())?;
-        let _original_capture = old_settings.capture_screenshot;
         *old_settings = new_settings.clone();
         drop(old_settings);
 
@@ -189,31 +189,7 @@ impl AppHost {
         Ok(())
     }
 
-    pub fn apply_autostart(&self) {
-        // Create a .desktop file in ~/.config/autostart/
-        if let Ok(settings) = self.settings.lock() {
-            if settings.run_at_startup {
-                let autostart_dir = PathBuf::from(std::env::var("HOME").unwrap_or_default())
-                    .join(".config")
-                    .join("autostart");
-                std::fs::create_dir_all(&autostart_dir).ok();
-
-                let desktop_content = format!(
-                    "[Desktop Entry]\nType=Application\nName=Awayra\nExec={}\nX-GNOME-Autostart-enabled=true\n",
-                    std::env::current_exe().unwrap_or_default().display()
-                );
-                std::fs::write(autostart_dir.join("awayra.desktop"), desktop_content).ok();
-            } else {
-                let autostart_path = PathBuf::from(std::env::var("HOME").unwrap_or_default())
-                    .join(".config")
-                    .join("autostart")
-                    .join("awayra.desktop");
-                std::fs::remove_file(autostart_path).ok();
-            }
-        }
-    }
-
-    pub async fn persist_all(&self) -> Result<(), String> {
+    pub fn persist_all(&self) -> Result<(), String> {
         // Persist state
         if let Ok(sched) = self.scheduler.lock() {
             self.state_store.save(sched.state())?;

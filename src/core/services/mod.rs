@@ -5,3 +5,4 @@ pub mod overlay_glass_settings;
 pub mod settings_schedule_changes;
 pub mod statistics_service;
 pub mod audio_service;
+pub mod autostart_service;
