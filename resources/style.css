@@ -81,23 +81,59 @@ button {
     transition: all 150ms ease-in-out;
 }
 
+button label {
+    color: inherit;
+}
+
 button:hover {
     background-color: #364355;
     border-color: #73CEF7;
 }
 
+button:active {
+    background-color: #2A3545;
+    border-color: #58C2F4;
+}
+
+button:focus-visible, button:focus {
+    border-color: #58C2F4;
+    box-shadow: 0 0 0 2px rgba(88, 194, 244, 0.3);
+}
+
+button:disabled {
+    background-color: #1A212B;
+    color: #5A6675;
+    border: 1px solid #2A3442;
+    opacity: 0.6;
+}
+
 button.primary-btn, button.primary-button {
-    background-color: #58C2F4;
-    color: #07141C;
-    border: 1px solid #58C2F4;
+    background-color: #2E9CE8;
+    color: #FFFFFF;
+    border: 1px solid #2E9CE8;
     font-weight: 600;
     font-size: 13px;
     border-radius: 10px;
 }
 
+button.primary-btn label, button.primary-button label {
+    color: #FFFFFF;
+}
+
 button.primary-btn:hover, button.primary-button:hover {
-    background-color: #73CEF7;
-    border-color: #73CEF7;
+    background-color: #4FB4F0;
+    border-color: #4FB4F0;
+}
+
+button.primary-btn:active, button.primary-button:active {
+    background-color: #1F84CC;
+    border-color: #1F84CC;
+}
+
+button.primary-btn:disabled, button.primary-button:disabled {
+    background-color: #222C3A;
+    color: #6B7889;
+    border: 1px solid #2B3A4A;
 }
 
 button.secondary-button {
