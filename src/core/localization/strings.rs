@@ -355,6 +355,9 @@ impl Strings {
         en_map.insert("SettingsCancel", "Cancel");
         fa_map.insert("SettingsCancel", "انصراف");
 
+        en_map.insert("SettingsResetDefaults", "Reset to Defaults");
+        fa_map.insert("SettingsResetDefaults", "بازنشانی به تنظیمات اولیه");
+
         en_map.insert("MinutesUnit", "minutes");
         fa_map.insert("MinutesUnit", "دقیقه");
 

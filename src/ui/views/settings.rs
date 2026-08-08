@@ -302,8 +302,14 @@ impl SettingsWindow {
 
         // Action bar
         let action_bar = gtk4::Box::new(Orientation::Horizontal, 8);
-        action_bar.set_halign(Align::End);
+        action_bar.set_hexpand(true);
         action_bar.set_margin_top(8);
+
+        let reset_btn = Button::with_label(&loc.get("SettingsResetDefaults"));
+        reset_btn.add_css_class("secondary-button");
+        reset_btn.set_halign(Align::Start);
+        reset_btn.set_hexpand(true);
+        action_bar.append(&reset_btn);
 
         let save_btn = Button::with_label(&loc.get("SettingsSave"));
         save_btn.add_css_class("primary-button");
@@ -315,6 +321,86 @@ impl SettingsWindow {
         action_bar.append(&cancel_btn);
 
         vbox.append(&action_bar);
+
+        // Reset signal - restore input controls to default settings values
+        let eye_enabled_reset = eye_enabled.clone();
+        let eye_interval_reset = eye_interval.clone();
+        let eye_duration_reset = eye_duration.clone();
+        let eye_sound_enabled_reset = eye_sound_enabled.clone();
+        let move_enabled_reset = move_enabled.clone();
+        let move_interval_reset = move_interval.clone();
+        let move_duration_reset = move_duration.clone();
+        let move_sound_enabled_reset = move_sound_enabled.clone();
+        let sound_theme_dropdown_reset = sound_theme_dropdown.clone();
+        let sound_volume_reset = sound_volume.clone();
+        let sound_repeat_reset = sound_repeat.clone();
+        let allow_skip_reset = allow_skip.clone();
+        let allow_snooze_reset = allow_snooze.clone();
+        let snooze_dur_reset = snooze_dur.clone();
+        let pause_idle_reset = pause_idle.clone();
+        let idle_thresh_reset = idle_thresh.clone();
+        let work_hours_reset = work_hours.clone();
+        let work_start_h_reset = work_start_h.clone();
+        let work_start_m_reset = work_start_m.clone();
+        let work_end_h_reset = work_end_h.clone();
+        let work_end_m_reset = work_end_m.clone();
+        let language_dropdown_reset = language_dropdown.clone();
+        let glass_slider_reset = glass_slider.clone();
+        let reduced_motion_reset = reduced_motion.clone();
+        let capture_switch_reset = capture_switch.clone();
+        let bg_entry_reset = bg_entry.clone();
+        let autostart_switch_reset = autostart_switch.clone();
+        let start_minimized_reset = start_minimized.clone();
+        let close_to_tray_reset = close_to_tray.clone();
+
+        reset_btn.connect_clicked(move |_| {
+            let def = AppSettings::default();
+            eye_enabled_reset.set_active(def.eye_reset_enabled);
+            eye_interval_reset.set_value(def.eye_reset_interval_minutes as f64);
+            eye_duration_reset.set_value(def.eye_reset_duration_seconds as f64);
+            eye_sound_enabled_reset.set_active(def.eye_break_sound_enabled);
+
+            move_enabled_reset.set_active(def.move_break_enabled);
+            move_interval_reset.set_value(def.move_break_interval_minutes as f64);
+            move_duration_reset.set_value(def.move_break_duration_seconds as f64);
+            move_sound_enabled_reset.set_active(def.move_break_sound_enabled);
+
+            sound_theme_dropdown_reset.set_selected(match def.break_sound_theme {
+                BreakSoundTheme::SoftBell => 0,
+                BreakSoundTheme::GentleChime => 1,
+                BreakSoundTheme::CalmDrop => 2,
+                BreakSoundTheme::CalmPiano => 3,
+                BreakSoundTheme::MorningDew => 4,
+                BreakSoundTheme::StillWater => 5,
+            });
+            sound_volume_reset.set_value(def.break_sound_volume as f64);
+            sound_repeat_reset.set_value(def.break_sound_repeat_seconds as f64);
+
+            allow_skip_reset.set_active(def.allow_skip);
+            allow_snooze_reset.set_active(def.allow_snooze);
+            snooze_dur_reset.set_value(def.snooze_duration_minutes as f64);
+
+            pause_idle_reset.set_active(def.pause_while_idle);
+            idle_thresh_reset.set_value(def.idle_threshold_minutes as f64);
+            work_hours_reset.set_active(def.work_hours_enabled);
+            work_start_h_reset.set_value(def.work_start_hour as f64);
+            work_start_m_reset.set_value(def.work_start_minute as f64);
+            work_end_h_reset.set_value(def.work_end_hour as f64);
+            work_end_m_reset.set_value(def.work_end_minute as f64);
+
+            language_dropdown_reset.set_selected(match def.language {
+                AppLanguage::English => 0,
+                AppLanguage::Persian => 1,
+            });
+            glass_slider_reset.set_value(def.glass_clarity as f64);
+            reduced_motion_reset.set_active(def.reduced_motion);
+            capture_switch_reset.set_active(def.capture_screenshot);
+            bg_entry_reset.set_text("");
+
+            autostart_switch_reset.set_active(def.run_at_startup);
+            start_minimized_reset.set_active(def.start_minimized);
+            close_to_tray_reset.set_active(def.close_to_tray);
+        });
         window.set_child(Some(&vbox));
 
         // Save signal - persist settings and resume scheduler

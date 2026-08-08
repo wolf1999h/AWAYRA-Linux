@@ -56,7 +56,7 @@ impl AboutWindow {
 
         github_btn.connect_clicked(|_| {
             let _ = gtk4::gio::AppInfo::launch_default_for_uri(
-                "https://github.com",
+                "https://github.com/wolf1999h/AWAYRA-Linux",
                 None::<&gtk4::gio::AppLaunchContext>,
             );
         });
